@@ -1,0 +1,385 @@
+
+<!DOCTYPE html> <html lang="cs"> <head> <meta name="robots" content="noindex, nofollow"><script>/* Statický shim pro náhled na GitHub Pages — NENÍ součástí UI úprav.
+   Živý web běží na PHP/Nette; tady jen zařizuje, aby kopie fungovala bez serveru:
+   - AJAX na kořenové cesty míří pod BASE, data map z uložených JSON, signály (?do=…) na prázdnou odpověď,
+   - cookie lišta se dá zavřít (pamatuje si to localStorage),
+   - klasické POST formuláře se neodešlou (server tu není) — ukáže se krátké upozornění,
+   - přepínač Upravená / Původní verze (localStorage + ?puvodni / ?upravene). */
+(function () {
+	var B = '/brave-development-ui';
+	window.__BRAVE_BASE = B;
+
+	var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+		set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+	var qs = location.search;
+	if (/[?&]puvodni\b/.test(qs)) store.set('brave-refine', 'off');
+	if (/[?&]upravene\b/.test(qs)) store.set('brave-refine', 'on');
+	var off = store.get('brave-refine') === 'off';
+	window.__BRAVE_REFINE_OFF = off;
+	var html = document.documentElement;
+	html.classList.add('is-static-preview');
+	if (off) html.classList.add('refine-off');
+	if (store.get('brave-static-cookie')) html.classList.add('static-cookie-ok');
+
+	function slug(s) {
+		return s.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'root';
+	}
+	function map(u) {
+		if (typeof u !== 'string') return u;
+		var v = u;
+		if (v.indexOf(location.origin) === 0) v = v.slice(location.origin.length);
+		if (v.indexOf('https://demo.bravedevelopment.cz') === 0) v = v.slice(33) || '/';
+		if (v.charAt(0) === '?') v = location.pathname + v;
+		if (v.charAt(0) !== '/' || v.charAt(1) === '/') return u;
+		if (/[?&]do=map-[a-z0-9]+-(options|markers|lines)/i.test(v)) {
+			if (v.indexOf(B + '/') === 0) v = v.slice(B.length) || '/';
+			return B + '/_data/' + slug(v) + '.json';
+		}
+		if (/[?&]_?do=/.test(v)) return B + '/_data/noop.json';
+		if (v.indexOf(B + '/') === 0 || v === B) return u;
+		return B + v;
+	}
+
+	var open = XMLHttpRequest.prototype.open;
+	XMLHttpRequest.prototype.open = function (method, url) {
+		var mapped = map(url);
+		var args = Array.prototype.slice.call(arguments);
+		if (mapped !== url) {
+			args[1] = mapped;
+			// GitHub Pages na POST odpoví 405 — u statických odpovědí stačí GET
+			if (/\/_data\//.test(mapped)) args[0] = 'GET';
+		}
+		return open.apply(this, args);
+	};
+	if (window.fetch) {
+		var f = window.fetch;
+		window.fetch = function (input, init) {
+			if (typeof input === 'string') {
+				var m = map(input);
+				if (m !== input && /\/_data\//.test(m) && init) init = Object.assign({}, init, { method: 'GET', body: undefined });
+				input = m;
+			}
+			return f.call(this, input, init);
+		};
+	}
+
+	function toast(text) {
+		var t = document.createElement('div');
+		t.className = 'staticToast';
+		t.setAttribute('role', 'status');
+		t.textContent = text;
+		document.body.appendChild(t);
+		setTimeout(function () { t.classList.add('is-in'); }, 10);
+		setTimeout(function () { t.classList.remove('is-in'); setTimeout(function () { t.remove(); }, 400); }, 3600);
+	}
+
+	document.addEventListener('submit', function (e) {
+		var form = e.target;
+		if (!form || form.tagName !== 'FORM') return;
+		if (form.id === 'frm-cookieBar-settingsForm') {
+			e.preventDefault();
+			e.stopImmediatePropagation();
+			store.set('brave-static-cookie', '1');
+			html.classList.add('static-cookie-ok');
+			return;
+		}
+		// Bublá až sem, takže validace Nette (na formuláři) už proběhla a případně
+		// odeslání zastavila — upozornění jen u platně vyplněného formuláře.
+		if ((form.method || '').toLowerCase() === 'post' && !form.classList.contains('ajax')) {
+			if (!e.defaultPrevented) {
+				e.preventDefault();
+				toast('Statický náhled: formulář se neodesílá, na živém webu proběhne odeslání.');
+			}
+		}
+	});
+	document.addEventListener('submit', function (e) {
+		var form = e.target;
+		if (form && form.classList && form.classList.contains('ajax') && /reoUnit(Favorite|Comparison)/.test(form.id || '')) {
+			toast('Statický náhled: oblíbené a porovnání ukládá server, zde se neukládají.');
+		}
+	}, true);
+	// Cookie lišta: tlačítka jsou submit inputy uvnitř ajax formuláře
+	document.addEventListener('click', function (e) {
+		var b = e.target && e.target.closest && e.target.closest('#frm-cookieBar-settingsForm [type=submit]');
+		if (!b) return;
+		e.preventDefault();
+		e.stopImmediatePropagation();
+		store.set('brave-static-cookie', '1');
+		html.classList.add('static-cookie-ok');
+	}, true);
+
+	var css = document.createElement('style');
+	css.textContent =
+		'html.static-cookie-ok .cookie-bar-modal{display:none!important}' +
+		'.staticToast{position:fixed;left:50%;bottom:24px;z-index:100000;transform:translate(-50%,12px);opacity:0;max-width:calc(100% - 32px);' +
+		'background:#111;color:#fff;font:500 13px/1.45 Poppins,system-ui,sans-serif;padding:12px 18px;border-radius:8px;box-shadow:0 10px 30px rgb(0 0 0/.25);transition:.3s}' +
+		'.staticToast.is-in{opacity:1;transform:translate(-50%,0)}' +
+		'.refineSwitch{position:fixed;left:16px;bottom:16px;z-index:9990;display:flex;gap:2px;padding:3px;border-radius:999px;background:rgb(17 17 17/.82);' +
+		'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font:600 11px/1 Poppins,system-ui,sans-serif;letter-spacing:.02em;box-shadow:0 6px 20px rgb(0 0 0/.18)}' +
+		'.refineSwitch button{all:unset;cursor:pointer;color:rgb(255 255 255/.7);padding:7px 11px;border-radius:999px;transition:.2s}' +
+		'.refineSwitch button[aria-pressed=true]{background:#fff;color:#111}' +
+		'.refineSwitch button:focus-visible{outline:2px solid #3cd070;outline-offset:2px}' +
+		'@media print{.refineSwitch{display:none}}';
+	document.head.appendChild(css);
+
+	document.addEventListener('DOMContentLoaded', function () {
+		var s = document.createElement('div');
+		s.className = 'refineSwitch';
+		s.setAttribute('role', 'group');
+		s.setAttribute('aria-label', 'Verze náhledu');
+		s.innerHTML = '<button type="button" data-v="on" aria-pressed="' + !off + '">Upravená</button>' +
+			'<button type="button" data-v="off" aria-pressed="' + off + '">Původní</button>';
+		s.addEventListener('click', function (e) {
+			var b = e.target.closest('button');
+			if (!b || b.getAttribute('aria-pressed') === 'true') return;
+			store.set('brave-refine', b.getAttribute('data-v'));
+			location.reload();
+		});
+		document.body.appendChild(s);
+	});
+})();
+</script> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <meta name="author" content="Bytový dům Hálkova & IMPnet"> <meta name="copyright" content="Bytový dům Hálkova"> <meta name="application-name" content="Bytový dům Hálkova">   <meta name="theme-color" content="#42c787" /> <meta name="msapplication-TileColor" content="#42c787" /> <link rel="shortcut icon" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.32x32.exact.ico" /> <link rel="apple-touch-icon-precomposed" sizes="57x57" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.57x57.exact.png" /> <link rel="apple-touch-icon-precomposed" sizes="60x60" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.60x60.exact.png" /> <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.72x72.exact.png" /> <link rel="apple-touch-icon-precomposed" sizes="76x76" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.76x76.exact.png" /> <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.114x114.exact.png" /> <link rel="apple-touch-icon-precomposed" sizes="120x120" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.120x120.exact.png" /> <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.144x144.exact.png" /> <link rel="apple-touch-icon-precomposed" sizes="152x152" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.152x152.exact.png" /> <link rel="icon" type="image/png" sizes="16x16" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.16x16.exact.png" /> <link rel="icon" type="image/png" sizes="32x32" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.32x32.exact.png" /> <link rel="icon" type="image/png" sizes="96x96" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.96x96.exact.png" /> <link rel="icon" type="image/png" sizes="128x128" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.128x128.exact.png" /> <link rel="icon" type="image/png" sizes="196x196" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.196x196.exact.png" /> <meta name="msapplication-square70x70logo" content="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.70x70.exact.png" /> <meta name="msapplication-TileImage" content="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.144x144.exact.png" /> <meta name="msapplication-square150x150logo" content="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.150x150.exact.png" /> <meta name="msapplication-square310x310logo" content="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.310x310.exact.png" /> <link rel="preload" href="/brave-development-ui/www/Development/cache/e310bc7c7c3b626240875905e13200a4.css?modified=1790938914" as="style"> <link rel="stylesheet" href="/brave-development-ui/www/Development/cache/e310bc7c7c3b626240875905e13200a4.css?modified=1790938914" type="text/css" media="screen"><link rel="preload" href="/brave-development-ui/www/Development/cache/9710ee2e4fc1b09cbf7a1a22a72e21d1.js?modified=1791282034" as="script"> <script type="text/javascript" src="/brave-development-ui/www/Development/cache/9710ee2e4fc1b09cbf7a1a22a72e21d1.js?modified=1791282034"></script> <script id="snippet-gtm-">
+	window.dataLayer = window.dataLayer || [];
+		dataLayer.push({"cart":[],"visitorType":"low-value"});
+</script><script>
+	window.dataLayer = window.dataLayer || [];
+	(function(){
+		window.dataLayer.push(arguments);
+	})(
+		'consent',
+		'default',
+		{
+			'functionality_storage': 'granted',
+			'security_storage': 'granted',
+			'personalization_storage': 'denied',
+			'ad_storage': 'denied',
+			'analytics_storage': 'denied',
+			'ad_user_data': 'denied',
+			'ad_personalization': 'denied',
+			'wait_for_update': 2000
+		}
+	);
+</script> <script type="application/ld+json">
+			{
+				"@context": "https://schema.org",
+				"@graph": [
+					{
+						"@type": "RealEstateAgent",
+						"@id": "https://demo.bravedevelopment.cz/#organization",
+						"name": "Bytový dům Hálkova",
+						"url": "https://demo.bravedevelopment.cz/",
+						"description": "Bytový dům Hálkova nabízí šest nadstandardních bytů 1+kk až 4+kk na klidném okraji Brna. Vlastní zahrada, les na dosah, dokončení v roce 2026."
+					},
+					{
+						"@type": "WebSite",
+						"@id": "https://demo.bravedevelopment.cz/#website",
+						"url": "https://demo.bravedevelopment.cz/",
+						"name": "Bytový dům Hálkova",
+						"inLanguage": "cs",
+						"publisher": {"@id": "https://demo.bravedevelopment.cz/#organization"}
+					}
+				]
+			}
+		</script> <script>
+		dataLayer.push({
+			'impnet': {'pageType': 'section'}
+		});
+	</script> <meta property="og:url" content="https://demo.bravedevelopment.cz/standardy" /> <meta property="og:type" content="website" /> <meta property="og:title" content="Standardy" /> <meta property="og:description" content="" /> <meta property="og:image" content="/brave-development-ui/www/upload/fbec8b09/20260903131737970.png" /> <meta name="keywords" content="Kvalita v každém detailu"> <title id="snippet--metaSnippet"> Standardy | Bytový dům Hálkova </title> <link rel="canonical" href="https://demo.bravedevelopment.cz/standardy" /> <link rel="stylesheet" href="/brave-development-ui/refine/brave-refine.css" id="brave-refine-css"><script>window.__BRAVE_REFINE_OFF&&(document.getElementById('brave-refine-css').disabled=true)</script><script src="/brave-development-ui/refine/brave-refine.js" defer></script></head> <body class="frontend-page frontend-page-2"> <header> <section class="topBar" data-uk-sticky="show-on-up: true"> <div class="container"> <div class="uk-grid-small" data-uk-grid> <div class="uk-width-auto fx fxa"> <a href="/brave-development-ui/" class="logo" title="Bytový dům Hálkova"> <picture> <source srcset="/brave-development-ui/www/upload/f0dec1d8/logo-development.svg" type="image/webp"> <img loading="lazy" src="/brave-development-ui/www/upload/f0dec1d8/logo-development.svg" alt="Bytový dům Hálkova" width="233" height="59"> </picture> </a> </div> <div class="uk-width-expand"> <div class="menuPack"> <div class="menuTop uk-visible@l"> <a href="/brave-development-ui/oblibene-nemovitosti/" class="menuLink favorite" title="Oblíbené"> <span class="icon"> <img loading="lazy" src="/brave-development-ui/www/Development/images/svg/favorite.svg" alt="Oblíbené" data-uk-svg> <span class="number" id="snippet--reoUnitFavorite"> 0 </span> </span> <span class="uk-visible@l text">Oblíbené</span> </a> <a href="/brave-development-ui/porovnani-jednotek/" class="menuLink comparison" title="Porovnání"> <span class="icon"> <img loading="lazy" src="/brave-development-ui/www/Development/images/svg/comparator.svg" alt="Porovnání" data-uk-svg> <span class="number" id="snippet--reoUnitComparison"> 0 </span> </span> <span class="uk-visible@l text">Porovnání</span> </a> <div class="languageSwitcher"> <a title="Jazyk: Čeština" href="#" class="menuLink language uk-visible@s"> <span>CS</span> <span class="icon"> <img loading="lazy" src="/brave-development-ui/www/Development/images/svg/chevron-down.svg" alt="rozbalit" data-uk-svg> </span> </a> <div data-uk-dropdown="mode: click"> <ul class="uk-nav uk-dropdown-nav"> <li class="uk-active"> <a href="/brave-development-ui/standardy/" data-uk-tooltip title="Jazyk: Čeština" class="menuLink"> <span>CS</span> </a> </li> <li> <a href="/brave-development-ui/standardy/" data-uk-tooltip title="Jazyk: English" class="menuLink"> <span>EN</span> </a> </li> </ul> </div> <div class="language uk-hidden@s"> <ul class="uk-nav"> <li class="uk-active"> <a href="/brave-development-ui/standardy/" data-uk-tooltip title="Jazyk: Čeština" class="menuLink"> <span>CS</span> </a> </li> <li> <a href="/brave-development-ui/standardy/" data-uk-tooltip title="Jazyk: English" class="menuLink"> <span>EN</span> </a> </li> </ul> </div> </div> </div> <div class="menuBar"> <nav class="uk-navbar-container uk-navbar-transparent menu-text uk-visible@l" data-uk-navbar> <div class="uk-navbar-right"> <ul class="uk-navbar-nav">  <li> <a href="/brave-development-ui/o-projektu/" target=""> <span>O projektu</span> </a> </li> <li class="uk-active"> <a href="/brave-development-ui/standardy/" target=""> <span>Standardy</span> </a> </li> <li> <a href="/brave-development-ui/lokalita/" target=""> <span>Lokalita</span> </a> </li> <li> <a href="/brave-development-ui/financovani/" target=""> <span>Financování</span> </a> </li> <li> <a href="/brave-development-ui/galerie/" target=""> <span>Galerie</span> </a> </li> <li> <a href="/brave-development-ui/faq/" target=""> <span>Časté otázky</span> </a> </li> <li> <a href="/brave-development-ui/o-nas/" target=""> <span>O nás</span> </a> </li> <li> <a href="/brave-development-ui/aktuality/" target=""> <span>Aktuality</span> </a> </li> <li> <a href="/brave-development-ui/kontakty/" target=""> <span>Kontakt</span> </a> </li> </ul> </div> </nav> <nav class="uk-navbar-container uk-navbar-transparent" data-uk-navbar> <div class="uk-navbar-right"> <ul class="uk-navbar-nav"> <li> <a href="/brave-development-ui/nabidka-nemovitosti/" class="button button-main"> Volné byty a ceník<i class="mdi mdi-chevron-right"></i> </a> </li> </ul> </div> </nav> <a class="uk-navbar-toggle uk-hidden@l" data-uk-toggle="target: #offcanvas-nav" href="#" aria-label="Menu"> <img src="/brave-development-ui/www/Development/images/svg/menu_toggle.svg" class="hamburger" width="36" height="36" alt="menu toggle" data-uk-svg> </a> </div> </div> </div> </div> </div> </section> <div class="widget"> <a href="mailto:info@brave.cz"> <span><i class="mdi mdi-email"></i><span>info@brave.cz</span></span> </a> <a href="tel:+420123456789" class="phone"> <span><i class="mdi mdi-phone"></i><span>+420 123 456 789</span></span> </a> </div> </header> <div id="offcanvas-nav" data-uk-offcanvas="mode: slide; overlay: true; flip: true"> <div class="uk-offcanvas-bar"> <button class="uk-offcanvas-close" type="button" data-uk-close aria-label="Zavřít"></button> <a href="/brave-development-ui/" class="logo" title="Bytový dům Hálkova"> <picture> <source srcset="/brave-development-ui/www/upload/f0dec1d8/logo-development.svg" type="image/webp"> <img loading="lazy" src="/brave-development-ui/www/upload/f0dec1d8/logo-development.svg" alt="Bytový dům Hálkova" width="233" height="59"> </picture> </a> <div class="top"> <a href="/brave-development-ui/oblibene-nemovitosti/" class="menuLink favorite" title="Oblíbené"> <span class="icon"> <img loading="lazy" src="/brave-development-ui/www/Development/images/svg/favorite.svg" alt="Oblíbené" data-uk-svg> <span class="number"> 0 </span> </span> </a> <a href="/brave-development-ui/porovnani-jednotek/" class="menuLink comparison" title="Porovnání"> <span class="icon"> <img loading="lazy" src="/brave-development-ui/www/Development/images/svg/comparator.svg" alt="Porovnání" data-uk-svg> <span class="number"> 0 </span> </span> </a> <div class="languageSwitcher"> <a title="Jazyk: Čeština" href="#" class="menuLink language uk-visible@s"> <span>CS</span> <span class="icon"> <img loading="lazy" src="/brave-development-ui/www/Development/images/svg/chevron-down.svg" alt="rozbalit" data-uk-svg> </span> </a> <div data-uk-dropdown="mode: click"> <ul class="uk-nav uk-dropdown-nav"> <li class="uk-active"> <a href="/brave-development-ui/standardy/" data-uk-tooltip title="Jazyk: Čeština" class="menuLink"> <span>CS</span> </a> </li> <li> <a href="/brave-development-ui/standardy/" data-uk-tooltip title="Jazyk: English" class="menuLink"> <span>EN</span> </a> </li> </ul> </div> <div class="language uk-hidden@s"> <ul class="uk-nav"> <li class="uk-active"> <a href="/brave-development-ui/standardy/" data-uk-tooltip title="Jazyk: Čeština" class="menuLink"> <span>CS</span> </a> </li> <li> <a href="/brave-development-ui/standardy/" data-uk-tooltip title="Jazyk: English" class="menuLink"> <span>EN</span> </a> </li> </ul> </div> </div> </div> <ul class="uk-nav uk-nav-default uk-nav-parent-icon offcanvasMainNav" data-uk-nav>  <li> <a href="/brave-development-ui/o-projektu/" target=""> O projektu </a> </li> <li class="uk-active"> <a href="/brave-development-ui/standardy/" target="" aria-current="page"> Standardy </a> </li> <li> <a href="/brave-development-ui/lokalita/" target=""> Lokalita </a> </li> <li> <a href="/brave-development-ui/financovani/" target=""> Financování </a> </li> <li> <a href="/brave-development-ui/galerie/" target=""> Galerie </a> </li> <li> <a href="/brave-development-ui/faq/" target=""> Časté otázky </a> </li> <li> <a href="/brave-development-ui/o-nas/" target=""> O nás </a> </li> <li> <a href="/brave-development-ui/aktuality/" target=""> Aktuality </a> </li> <li> <a href="/brave-development-ui/kontakty/" target=""> Kontakt </a> </li> </ul> </div> </div> <main> <section class="pageTopPanel pageTopPanel--singleMediaSmall"> <div class="container"> <div class="uk-grid-small" data-uk-grid> <div class="uk-width-2-5@m"> <div class="text"> <p class="subtitle">Kvalita v každém detailu</p> <h1>Standardy</h1> <div class="editableBlock"><p>Každý byt v Hálkově předáváme ve vybavení, které jinde bývá za příplatek. Projděte si, co všechno je u nás v ceně — od podlahového vytápění po přípravu na chytrou domácnost.</p></div> <div class="documents"> <a href="/brave-development-ui/www/upload/77aafedf/standardy-vybaveni.pdf" target="_blank" class="button second" title="Stáhnout v PDF"> <i class="mdi mdi-tray-arrow-down"></i>Stáhnout v PDF </a> </div> </div> </div> <div class="uk-width-3-5@m" data-image-brick> <picture> <source srcset="/brave-development-ui/www/upload/fbec8b09/20260903131737970/20260903131737970.1113x815.webp" type="image/webp"> <img loading="lazy" src="/brave-development-ui/www/upload/fbec8b09/20260903131737970/20260903131737970.1113x815.png" alt="Standardy" title="Standardy"> </picture> </div> </div> </div> </section> <script>
+	// Klik na náhled = prohodí ho s velkou fotkou vlevo, lightbox se NEotevře.
+	// Teprve klik na velkou fotku otevře fullscreen (UIkit lightbox).
+	// Prohazují se celé <a> prvky (i mezi kontejnery) + jejich třídy, aby si každý
+	// odkaz nesl vlastní href → lightbox zůstane konzistentní.
+	document.addEventListener('DOMContentLoaded', function () {
+		function swapNodes(a, b) {
+			var mark = document.createComment('');
+			a.parentNode.insertBefore(mark, a);
+			b.parentNode.insertBefore(a, b);
+			mark.parentNode.insertBefore(b, mark);
+			mark.parentNode.removeChild(mark);
+		}
+
+		document.querySelectorAll('.galleryGrid').forEach(function (grid) {
+			var thumbs = grid.querySelector('.galleryGrid-thumbs');
+			var dragged = false;   // poslední kliknutí vzniklo tažením → neprohazovat fotku
+
+			// tažení myší nad náhledy posouvá pás (obdoba swipe na mobilu,
+			// kde scrollování řeší nativně overflow-x)
+			if (thumbs) {
+				var down = false, startX = 0, startScroll = 0;
+
+				thumbs.addEventListener('mousedown', function (e) {
+					if (e.button !== 0) return;
+					down = true;
+					dragged = false;
+					startX = e.pageX;
+					startScroll = thumbs.scrollLeft;
+					thumbs.classList.add('is-dragging');
+					e.preventDefault();   // potlačí nativní tažení obrázku/odkazu i výběr textu
+				});
+
+				document.addEventListener('mousemove', function (e) {
+					if (!down) return;
+					var dx = e.pageX - startX;
+					if (Math.abs(dx) > 4) dragged = true;   // práh, ať drobný posun projde jako klik
+					thumbs.scrollLeft = startScroll - dx;
+				});
+
+				document.addEventListener('mouseup', function () {
+					if (!down) return;
+					down = false;
+					thumbs.classList.remove('is-dragging');
+				});
+			}
+
+			// capture fáze → UIkit lightbox (delegovaný na bubble) se k události nedostane
+			grid.addEventListener('click', function (e) {
+				// po tažení kliknutí zahodit (jinak by se fotka prohodila / otevřel lightbox);
+				// jen uvnitř pásu, ať se nespolkne klik na šipky (navigace je nově uvnitř gridu)
+				if (dragged && thumbs && thumbs.contains(e.target)) {
+					dragged = false;
+					e.preventDefault();
+					e.stopPropagation();
+					return;
+				}
+
+				var item = e.target.closest ? e.target.closest('.galleryGrid-item') : null;
+				if (!item) return;                       // featured → nechat projít do lightboxu
+
+				var featured = grid.querySelector('.galleryGrid-featured');
+				if (!featured) return;
+
+				e.preventDefault();
+				e.stopPropagation();
+				swapNodes(featured, item);
+				featured.className = 'galleryGrid-item';
+				item.className = 'galleryGrid-featured';
+			}, true);
+		});
+
+		// vlastní scrollbar + šipky pod pásem náhledů (nativní scrollbar je skrytý v CSS)
+		document.querySelectorAll('.galleryGrid-nav').forEach(function (nav) {
+			var thumbs = nav.parentNode.querySelector('.galleryGrid-thumbs');
+			if (!thumbs) return;
+
+			var bar = nav.querySelector('.galleryGrid-bar');
+			var knob = nav.querySelector('.galleryGrid-barThumb');
+
+			// šířka jezdce = podíl viditelné části, pozice = podíl odscrollovaného
+			function sync() {
+				var total = thumbs.scrollWidth;
+				var view = thumbs.clientWidth;
+				if (!total || !view) return;
+				var ratio = Math.min(view / total, 1);
+				var w = Math.max(ratio * 100, 8);          // minimální šířka, ať je jezdec uchopitelný
+				knob.style.width = w + '%';
+				var max = total - view;
+				var p = max > 0 ? thumbs.scrollLeft / max : 0;
+				knob.style.left = (p * (100 - w)) + '%';
+			}
+
+			thumbs.addEventListener('scroll', sync);
+			// ResizeObserver pokryje i přepnutí záložky (skrytý panel má rozměry 0) a resize okna
+			if (window.ResizeObserver) { new ResizeObserver(sync).observe(thumbs); }
+			window.addEventListener('resize', sync);
+			window.addEventListener('load', sync);
+			sync();
+
+			// klik/tažení po liště posouvá pás
+			function seek(clientX) {
+				var r = bar.getBoundingClientRect();
+				var kw = knob.offsetWidth;
+				var span = r.width - kw;
+				var p = span > 0 ? (clientX - r.left - kw / 2) / span : 0;
+				p = Math.min(1, Math.max(0, p));
+				thumbs.scrollLeft = p * (thumbs.scrollWidth - thumbs.clientWidth);
+			}
+			var barDown = false;
+			bar.addEventListener('mousedown', function (e) { barDown = true; seek(e.clientX); e.preventDefault(); });
+			document.addEventListener('mousemove', function (e) { if (barDown) seek(e.clientX); });
+			document.addEventListener('mouseup', function () { barDown = false; });
+
+			function step(dir) {
+				thumbs.scrollBy({ left: dir * thumbs.clientWidth, behavior: 'smooth' });
+			}
+			nav.querySelector('.prev').addEventListener('click', function () { step(-1); });
+			nav.querySelector('.next').addEventListener('click', function () { step(1); });
+		});
+	});
+</script>  <section class="contentPage contentPage--textOnlySmall"> <div class="container"> <div class="uk-grid-small" data-uk-grid> <div class="uk-flex-first uk-width-1-2@m"> <picture> <source srcset="/brave-development-ui/www/upload/846b8691/20260903131738033/20260903131738033.924x529.webp" type="image/webp"> <img src="/brave-development-ui/www/upload/846b8691/20260903131738033/20260903131738033.924x529.png" alt="Co dostanete v ceně bytu" title="Co dostanete v ceně bytu"> </picture> </div> <div class="uk-flex-last uk-width-1-2@m fx fxa"> <div class="text"> <p class="subtitle"> Standard je u nás základ </p> <h2>Co dostanete v ceně bytu</h2> <div class="editableBlock"><p>Nemusíte nic dokupovat ani řešit vícepráce. Tohle všechno máte v základní ceně:</p> <ul class="checkList"> <li>Exkluzivní lokalita — slepá ulice na okraji Brna</li> <li>6 nadstandardně vybavených bytů</li> <li>Podlahové vytápění s tepelným čerpadlem</li> <li>Dřevohliníková okna s izolačními trojskly</li> <li>Rekuperace s rozvody do všech místností</li> <li>Příprava pro chytrou domácnost</li> <li>Sklep a parkovací stání ke každému bytu</li> <li>Balkon, terasa nebo předzahrádka</li> </ul></div> </div> </div> </div> </div> </section> <section class="contentPage"> <div class="container"> <div class="uk-grid-small" data-uk-grid> <div class="uk-flex-last uk-width-1-2@m"> <div class="picture"> <div class="uk-grid-collapse" data-uk-grid> <div class="uk-width-1-2@s"> <picture> <source srcset="/brave-development-ui/www/upload/864e8d94/20260903131738079/20260903131738079.webp" type="image/webp"> <img src="/brave-development-ui/www/upload/864e8d94/20260903131738079.png" alt="" title=""> </picture> <picture> <source srcset="/brave-development-ui/www/upload/864e8d94/20260903131738097/20260903131738097.webp" type="image/webp"> <img src="/brave-development-ui/www/upload/864e8d94/20260903131738097.png" alt="" title=""> </picture> </div> <div class="uk-width-1-2@s"> <picture> <source srcset="/brave-development-ui/www/upload/846b8691/20260903131738057/20260903131738057.webp" type="image/webp"> <img src="/brave-development-ui/www/upload/846b8691/20260903131738057.png" alt="Prohlédněte si standardy na vlastní oči" title="Prohlédněte si standardy na vlastní oči"> </picture> </div> </div> </div> </div> <div class="uk-flex-first uk-width-1-2@m fx fxa"> <div class="text"> <p class="subtitle"> Materiály a vybavení </p> <h2>Prohlédněte si standardy na vlastní oči</h2> <div class="editableBlock"><p>Dveře v nadstandardní výšce, velkoformátové dlažby, kvalitní sanita nebo dubové třívrstvé podlahy. Vybírali jsme věci, na které sáhnete každý den — a poznáte to.</p> <p><a class="button" href="/brave-development-ui/galerie/">Zjistit více <span class="mdi mdi-chevron-right"></span></a></p></div> </div> </div> </div> </div> </section> <section class="videoContent"> <div class="container"> <div class="uk-grid-small" data-uk-grid> <div class="uk-width-1-2@m"> <div class="video videoFacade" data-video-facade data-youtube-id="cvXvxseapcU" tabindex="0" role="button" aria-label="Přehrát video: Standardy v praxi — Bytový dům Hálkova"> <picture> <img loading="lazy" src="https://i.ytimg.com/vi/cvXvxseapcU/hqdefault.jpg" alt="Standardy v praxi — Bytový dům Hálkova" data-video-poster-fallback="/brave-development-ui/www/Development/images/placeholder/property_video_placeholder.jpg"> </picture> <span class="playIcon"> <img src="/brave-development-ui/www/Development/images/svg/play-circle.svg" alt="" data-uk-svg> </span> </div> </div> <div class="uk-width-1-2@m fx fxa"> <div class="text"> <p class="subtitle">Standardy v praxi</p> <h2>Podívejte se, jak byty vybavujeme</h2> <p>Materiály a technologie vybíráme tak, aby obstály v každodenním provozu i po letech. Ve videu vám ukážeme, jak standardy vypadají přímo v rozestavěných bytech — a proč se vyplatí nešetřit na tom, co není vidět.</p> </div> </div> </div> </div> </section> <section class="vizualize"> <div class="container"> <div class="top"> <p class="subtitle">Interaktivní vizualizace</p> <h2>Vyberte si byt <span>přímo v našem domě</span></h2> </div> <div class="maping"> <img loading="lazy" src="/brave-development-ui/www/upload/4444a161/20260831070015086/20260831070015086.1600x800.qa-98.webp" alt="build" class="map" usemap="#image-map" width="1600" height="800"> <map name="image-map"> <area href="/brave-development-ui/dum-a-1-np/" alt="Dům A – 1. NP" title="Dům A – 1. NP" coords="184,477,736,477,736,539,184,539" shape="poly" class="withQTIP" data-part-id="42" data-part-sold="0"> <area href="/brave-development-ui/dum-a-2-np/" alt="Dům A – 2. NP" title="Dům A – 2. NP" coords="184,414,736,414,736,477,184,477" shape="poly" class="withQTIP" data-part-id="43" data-part-sold="0"> <area href="/brave-development-ui/dum-a-3-np/" alt="Dům A – 3. NP" title="Dům A – 3. NP" coords="184,352,736,352,736,414,184,414" shape="poly" class="withQTIP" data-part-id="44" data-part-sold="0"> <area href="/brave-development-ui/dum-a-4-np/" alt="Dům A – 4. NP" title="Dům A – 4. NP" coords="184,294,736,294,736,352,184,352" shape="poly" class="withQTIP" data-part-id="45" data-part-sold="0"> <area href="/brave-development-ui/dum-b-1-np/" alt="Dům B – 1. NP" title="Dům B – 1. NP" coords="850,507,1328,507,1328,557,850,557" shape="poly" class="withQTIP" data-part-id="46" data-part-sold="0"> <area href="/brave-development-ui/dum-b-2-np/" alt="Dům B – 2. NP" title="Dům B – 2. NP" coords="850,458,1328,458,1328,507,850,507" shape="poly" class="withQTIP" data-part-id="47" data-part-sold="0"> <area href="/brave-development-ui/dum-b-3-np/" alt="Dům B – 3. NP" title="Dům B – 3. NP" coords="850,408,1328,408,1328,458,850,458" shape="poly" class="withQTIP" data-part-id="48" data-part-sold="0"> <area href="/brave-development-ui/dum-b-4-np/" alt="Dům B – 4. NP" title="Dům B – 4. NP" coords="850,358,1328,358,1328,408,850,408" shape="poly" class="withQTIP" data-part-id="49" data-part-sold="0"> <area href="/brave-development-ui/dum-b-5-np/" alt="Dům B – 5. NP" title="Dům B – 5. NP" coords="850,309,1328,309,1328,358,850,358" shape="poly" class="withQTIP" data-part-id="50" data-part-sold="0"> <area href="/brave-development-ui/dum-b-6-np/" alt="Dům B – 6. NP" title="Dům B – 6. NP" coords="850,261,1328,261,1328,309,850,309" shape="poly" class="withQTIP" data-part-id="51" data-part-sold="0"> </map> <div id="o0" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům A – 1. NP</h2> <div class="availab"> <span class="type">1+kk</span> <span class="avail"><b>2</b> volné z 2</span> </div> <div class="availab"> <span class="type">2+kk</span> <span class="avail"><b>2</b> volné z 3</span> </div> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> </div> </div> <div id="o1" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům A – 2. NP</h2> <div class="availab"> <span class="type">1+kk</span> <span class="avail"><b>1</b> volný z 2</span> </div> <div class="availab"> <span class="type">2+kk</span> <span class="avail"><b>3</b> volné z 3</span> </div> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>1</b> volný z 2</span> </div> </div> </div> <div id="o2" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům A – 3. NP</h2> <div class="availab"> <span class="type">1+kk</span> <span class="avail"><b>1</b> volný z 2</span> </div> <div class="availab"> <span class="type">2+kk</span> <span class="avail"><b>1</b> volný z 3</span> </div> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>2</b> volné z 2</span> </div> </div> </div> <div id="o3" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům A – 4. NP</h2> <div class="availab"> <span class="type">2+kk</span> <span class="avail"><b>2</b> volné z 2</span> </div> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>1</b> volný z 2</span> </div> <div class="availab"> <span class="type">4+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> </div> </div> <div id="o4" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům B – 1. NP</h2> <div class="availab"> <span class="type">1+kk</span> <span class="avail"><b class="red">0</b> volných z 1</span> </div> <div class="availab"> <span class="type">2+kk</span> <span class="avail"><b>2</b> volné z 2</span> </div> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> </div> </div> <div id="o5" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům B – 2. NP</h2> <div class="availab"> <span class="type">1+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> <div class="availab"> <span class="type">2+kk</span> <span class="avail"><b class="red">0</b> volných z 1</span> </div> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>2</b> volné z 3</span> </div> </div> </div> <div id="o6" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům B – 3. NP</h2> <div class="availab"> <span class="type">1+kk</span> <span class="avail"><b class="red">0</b> volných z 1</span> </div> <div class="availab"> <span class="type">2+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>2</b> volné z 3</span> </div> </div> </div> <div id="o7" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům B – 4. NP</h2> <div class="availab"> <span class="type">1+kk</span> <span class="avail"><b class="red">0</b> volných z 1</span> </div> <div class="availab"> <span class="type">2+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>1</b> volný z 3</span> </div> </div> </div> <div id="o8" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům B – 5. NP</h2> <div class="availab"> <span class="type">2+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>1</b> volný z 2</span> </div> <div class="availab"> <span class="type">4+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> </div> </div> <div id="o9" class="odiv homehover" style="display:none;"> <div class="homehover-content"> <h2>Dům B – 6. NP</h2> <div class="availab"> <span class="type">3+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> <div class="availab"> <span class="type">4+kk</span> <span class="avail"><b>Poslední volná jednotka</b></span> </div> </div> </div> </div> <p class="link"><a href="/brave-development-ui/nabidka-nemovitosti/" class="button">Zobrazit všechny byty<i class="mdi mdi-chevron-right"></i></a></p> </div> </section> <section class="benefits"> <div class="container"> <div class="content"> <div class="uk-grid-small" data-uk-grid> <div class="uk-width-1-4@m uk-width-1-2"> <div class="benefitsBox"> <picture> <source srcset="/brave-development-ui/www/upload/792159b8/benefit-uspornost.svg" type="image/webp"> <img loading="lazy" src="/brave-development-ui/www/upload/792159b8/benefit-uspornost.svg" alt="Nízkoenergetický standard"> </picture> <h3>Nízkoenergetický standard</h3> <p>Tepelné čerpadlo, rekuperace a kvalitní izolace drží náklady na bydlení nízko po celý rok.</p> </div> </div><div class="uk-width-1-4@m uk-width-1-2"> <div class="benefitsBox"> <picture> <source srcset="/brave-development-ui/www/upload/792159b8/benefit-materialy.svg" type="image/webp"> <img loading="lazy" src="/brave-development-ui/www/upload/792159b8/benefit-materialy.svg" alt="Kvalitní materiály"> </picture> <h3>Kvalitní materiály</h3> <p>Okna s trojskly, zděné konstrukce a odolné povrchy, které vydrží déle než jedna generace.</p> </div> </div><div class="uk-width-1-4@m uk-width-1-2"> <div class="benefitsBox"> <picture> <source srcset="/brave-development-ui/www/upload/792159b8/benefit-soukromi.svg" type="image/webp"> <img loading="lazy" src="/brave-development-ui/www/upload/792159b8/benefit-soukromi.svg" alt="Soukromí a klid"> </picture> <h3>Soukromí a klid</h3> <p>V domě je jen šest bytů — sousedy znáte jménem a dům zůstává tichý i večer.</p> </div> </div><div class="uk-width-1-4@m uk-width-1-2"> <div class="benefitsBox"> <picture> <source srcset="/brave-development-ui/www/upload/792159b8/benefit-investice.svg" type="image/webp"> <img loading="lazy" src="/brave-development-ui/www/upload/792159b8/benefit-investice.svg" alt="Bezpečná investice"> </picture> <h3>Bezpečná investice</h3> <p>Byty v dobře dostupných částech Brna dlouhodobě rostou na hodnotě rychleji, než je průměr trhu.</p> </div> </div> </div> </div> </div> </section> </main> <footer> <section class="footerMain"> <div class="container"> <div class="uk-grid-small" data-uk-grid> <div class="uk-width-1-1 uk-width-1-2@s uk-width-1-4@m"> <a href="/brave-development-ui/" class="logo" title="Bytový dům Hálkova"> <picture> <source srcset="/brave-development-ui/www/upload/f0dec1d8/logo-development.svg" type="image/webp"> <img loading="lazy" src="/brave-development-ui/www/upload/f0dec1d8/logo-development.svg" alt="Bytový dům Hálkova" width="233" height="59"> </picture> </a> <div class="officeAddress"> <p class="officeAddress__label">Kancelář developera</p> <p class="address">náměstí Svobody 18, 602 00 Brno</p> </div> <div class="socialPack"> <a href="https://www.facebook.com" target="_blank" rel="noopener" title="Facebook"> <img loading="lazy" src="/brave-development-ui/www/Development/images/svg/facebook.svg" data-uk-svg alt="facebook icon"> </a> <a href="https://www.instagram.com/" target="_blank" rel="noopener" title="Instagram"> <img loading="lazy" src="/brave-development-ui/www/Development/images/svg/instagram.svg" data-uk-svg alt="instagram icon"> </a> <a href="https://www.youtube.com" target="_blank" rel="noopener" title="YouTube"> <img loading="lazy" src="/brave-development-ui/www/Development/images/svg/youtube.svg" data-uk-svg alt="youtube icon"> </a> </div> </div> <div class="uk-width-1-2 uk-width-1-4@m"> <div class="footerNav"> <h3>Navigace</h3> <ul class="menu"> <li> <a href="/brave-development-ui/o-projektu/" target="" title="O projektu"> O projektu </a> </li> <li class="uk-active"> <a href="/brave-development-ui/standardy/" target="" aria-current="page" title="Standardy"> Standardy </a> </li> <li> <a href="/brave-development-ui/lokalita/" target="" title="Lokalita"> Lokalita </a> </li> <li> <a href="/brave-development-ui/financovani/" target="" title="Financování"> Financování </a> </li> <li> <a href="/brave-development-ui/galerie/" target="" title="Galerie"> Galerie </a> </li> <li> <a href="/brave-development-ui/faq/" target="" title="Časté otázky"> Časté otázky </a> </li> <li> <a href="/brave-development-ui/o-nas/" target="" title="O nás"> O nás </a> </li> <li> <a href="/brave-development-ui/aktuality/" target="" title="Aktuality"> Aktuality </a> </li> <li> <a href="/brave-development-ui/kontakty/" target="" title="Kontakt"> Kontakt </a> </li> </ul> </div> </div> <div class="uk-width-1-2 uk-width-1-4@m"> <div class="footerTools"> <h3>Nástroje</h3> <ul>  <li> <a href="/brave-development-ui/investicni-kalkulacka/">Investiční kalkulačka</a> </li> <li> <a href="/brave-development-ui/oblibene-nemovitosti/">Oblíbené</a> </li> <li> <a href="/brave-development-ui/porovnani-jednotek/">Porovnání</a> </li> </ul> </div> </div> <div class="uk-width-1-1 uk-width-1-2@s uk-width-1-4@m"> <div class="footerContact"> <h3>Kontakt</h3> <a href="tel:+420123456789" class="contactLink"> <span class="ico"><img loading="lazy" src="/brave-development-ui/www/Development/images/svg/phone.svg" data-uk-svg alt=""></span> <span>+420 123 456 789</span> </a> <a href="mailto:info@brave.cz" class="contactLink"> <span class="ico"><img loading="lazy" src="/brave-development-ui/www/Development/images/svg/email.svg" data-uk-svg alt=""></span> <span>info@brave.cz</span> </a> <a href="/brave-development-ui/nabidka-nemovitosti/" class="button footerCta" title="Volné byty a ceník"> <span>Volné byty a ceník</span> </a> </div> </div> </div> </div> </section> <section class="footerEnd"> <div class="container"> <div class="uk-grid-small uk-flex-middle" data-uk-grid> <div class="uk-width-expand@m"> <ul class="menu"> <li> <a href="/brave-development-ui/zpracovani-osobnich-udaju/" title="Ochrana osobních údajů">Ochrana osobních údajů</a> </li> </ul> </div> <div class="uk-width-auto@m"> <p class="copy"> Copyright &copy; 2026 Bytový dům Hálkova | by <a href="https://www.impnet.cz/" target="_blank" rel="noopener" title="impnet"> <picture><img loading="lazy" src="/brave-development-ui/www/Development/images/impnet.png" alt="logo icon"></picture> </a> </p> </div> </div> </div> </section> </footer> <div id="snippet-flashMessage-"> <script>
+		$(document).ready(function(){
+			$('*[data-flash-message-modal-show]').each(function(){
+				UIkit.modal($(this)).show();
+			}).on('hidden', function(){
+				$(this).remove();
+			});
+		});
+	</script> </div><div id="snippet-cookieBar-"> <div class="cookie-bar-modal"> <div data-cookie-bar-accordion class="cookie-bar"> <picture class="background-image-left"> <img src="/brave-development-ui/www/Development/images/cookieBar/cookie-background-left.png" alt="cookie-bar background"> </picture> <picture class="background-image-right"> <img src="/brave-development-ui/www/Development/images/cookieBar/cookie-background-right.png" alt="cookie-bar background"> </picture> <form action="/brave-development-ui/standardy/" method="post" id="frm-cookieBar-settingsForm" class="ajax"> <div class="first-step"> <div class="content-step"> <div class="left-box"> <div class="left-box-step"> <picture class="logo"> <img src="/brave-development-ui/www/Development/images/cookieBar/cookie.svg" alt="cookie logo icon"> </picture> <div class="text"> <p class="main-title">Souhlas se zpracováním dat</p> <h3>Tato stránka používá cookies</h3> <p>Potřebujeme váš souhlas, abychom mohli vyhodnocovat návštěvnost a zobrazovat relevantní obsah. Vaše nastavení můžete kdykoliv změnit.</p> <div class="setting"> <p data-cookie-bar-accordion-toggle> <img src="/brave-development-ui/www/Development/images/cookieBar/arrow.svg" alt="arrow icon"> <span id="cookie-bar-settings">Nastavit</span> </p> </div> </div> </div> <div class="second-step"> <div class="text"> <p>Upravte si zpracování dle vlastních preferencí</p> </div> <div data-cookie-bar-accordion class="row-check"> <div class="row-label"> <span data-cookie-bar-accordion-toggle> <img src="/brave-development-ui/www/Development/images/cookieBar/arrow.svg" alt="accordion icon"> <strong>Technické a bezpečnostní</strong> </span> <label> <input type="checkbox" name="data[technical]" id="frm-cookieBar-settingsForm-data-technical" disabled checked> <span class="indicator"> <span> <img src="/brave-development-ui/www/Development/images/cookieBar/checked.svg" alt="checked icon"> </span> <span> <img src="/brave-development-ui/www/Development/images/cookieBar/unchecked.svg" alt="unchecked icon"> </span> </span> </label> </div> <span> Jsou nezbytné pro zajištění základních funkcí stránek a pro správný provoz webu. Z toho důvodu jsou povinné a nelze je vypnout. </span> </div> <div data-cookie-bar-accordion class="row-check"> <div class="row-label"> <span data-cookie-bar-accordion-toggle> <img src="/brave-development-ui/www/Development/images/cookieBar/arrow.svg" alt="accordion icon"> <strong>Funkční</strong> </span> <label> <input type="checkbox" name="data[operational]" id="frm-cookieBar-settingsForm-data-operational"> <span class="indicator"> <span> <img src="/brave-development-ui/www/Development/images/cookieBar/checked.svg" alt="checked icon"> </span> <span> <img src="/brave-development-ui/www/Development/images/cookieBar/unchecked.svg" alt="unchecked icon"> </span> </span> </label> </div> <span> Tato data poskytují pokročilejší funkce, jako je zapamatování přihlašovacích údajů, jazykových preferencí, země nebo nákupního košíku. Díky tomu nemusíte při každé další návštěvě nastavovat své preference. Tato data neshromažďují informace, které by mohly identifikovat uživatele. <div> </div> </span> </div> <div data-cookie-bar-accordion class="row-check"> <div class="row-label"> <span data-cookie-bar-accordion-toggle> <img src="/brave-development-ui/www/Development/images/cookieBar/arrow.svg" alt="accordion icon"> <strong>Personalizované a reklamní</strong> </span> <label> <input type="checkbox" name="data[marketing]" id="frm-cookieBar-settingsForm-data-marketing"> <span class="indicator"> <span> <img src="/brave-development-ui/www/Development/images/cookieBar/checked.svg" alt="checked icon"> </span> <span> <img src="/brave-development-ui/www/Development/images/cookieBar/unchecked.svg" alt="unchecked icon"> </span> </span> </label> </div> <span> Tato data mohou sloužit k zaznamenávání vašeho chování nebo preferencí, vyjádřených při návštěvě webu. Díky nim je možné zobrazovat vám obsah, který odpovídá vašim zájmům a relevantní reklamy na jiných stránkách. Tato data můžeme prostřednictvím našich stránek nastavit my nebo naši reklamní partneři. Jsou založeny na identifikaci vašeho prohlížeče a zařízení. Pokud tato data nepovolíte, zobrazovaná reklama nemusí odpovídat vašim zájmům. Nastavují souhlas s personalizovanou reklamou. <div> </div> </span> </div> <div data-cookie-bar-accordion class="row-check"> <div class="row-label"> <span data-cookie-bar-accordion-toggle> <img src="/brave-development-ui/www/Development/images/cookieBar/arrow.svg" alt="accordion icon"> <strong>Analytické</strong> </span> <label> <input type="checkbox" name="data[analytic]" id="frm-cookieBar-settingsForm-data-analytic"> <span class="indicator"> <span> <img src="/brave-development-ui/www/Development/images/cookieBar/checked.svg" alt="checked icon"> </span> <span> <img src="/brave-development-ui/www/Development/images/cookieBar/unchecked.svg" alt="unchecked icon"> </span> </span> </label> </div> <span> Tato data nám umožňují počítat návštěvy a zdroje návštěvnosti, abychom mohli měřit a zlepšovat výkon našich stránek. Pomáhají nám zjistit, které stránky jsou nejoblíbenější a které nejméně, a zjistit, jak se návštěvníci na webu pohybují. To nám umožňuje zlepšovat funkce a prostředí našeho webu. <div> </div> </span> </div> </div> </div> <div class="right-box"> <div class="row"> <div class="green-button"> <input type="submit" name="enableAll" value="Přijmout vše"> <img src="/brave-development-ui/www/Development/images/cookieBar/checkmark.svg" alt="checkmark icon"> </div> </div> <div class="row button-secondary-wrap"> <input type="submit" name="_submit" value="Souhlasím s vybranými" class="button-secondary"> </div> <div class="row"> <p class="disabletext">Souhlas můžete odmítnout <input type="submit" name="disableAll" value="Pouze nezbytné"></p> </div> </div> </div> </div> <input type="hidden" name="_do" value="cookieBar-settingsForm-submit"></form> </div> </div> </div><div id="snippet-popup-"> <script>
+		$(document).ready(function(){
+			$('*[data-popup-modal-show]').each(function(){
+				let id = $(this).data('id');
+				let time = $(this).data('show-time');
+				let modal = $(this);
+				let showBeforeLeaving = $(this).data('show-before-leaving');
+				let timer = setTimeout(() => {UIkit.modal(modal).show();}, time * 1000);
+
+				if(showBeforeLeaving) {
+					$(document).on('mouseleave.popup-' + id, function(){
+						UIkit.modal(modal).show();
+					});
+				}
+
+				modal.on('beforeshow', function(){
+					clearTimeout(timer);
+					$(document).off('mouseleave.popup-' + id);
+				});
+
+				modal.on('hidden', function(){
+					modal.remove();
+					$.nette.ajax({
+						data: {"popup-id": id},
+						url: "/standardy?do=popup-viewed",
+					});
+				});
+			});
+		});
+	</script> </div> <div id="snippet-regulatoryNotice-"> <script>
+		$(document).ready(function(){
+			$('*[data-regulatory-notice-modal]').each(function(){
+				let modal = $(this);
+				let id = modal.data('id');
+
+				// Zobraz modal okamžitě
+				UIkit.modal(modal).show();
+
+				// Tlačítko pro přijetí
+				modal.find('.regulatory-notice-accept').on('click', function(){
+					$.nette.ajax({
+						data: {"regulatoryNotice-id": id},
+						url: "/standardy?do=regulatoryNotice-accept",
+						complete: function() {
+							UIkit.modal(modal).hide();
+							modal.remove();
+						}
+					});
+				});
+
+				// Tlačítko pro odmítnutí
+				modal.find('.regulatory-notice-reject').on('click', function(){
+					let redirectUrl = $(this).data('redirect');
+
+					$.nette.ajax({
+						data: {"regulatoryNotice-id": id},
+						url: "/standardy?do=regulatoryNotice-reject",
+						complete: function() {
+							UIkit.modal(modal).hide();
+							modal.remove();
+
+							if (redirectUrl) {
+								window.location.href = redirectUrl;
+							}
+						}
+					});
+				});
+			});
+		});
+	</script> </div>  </body> </html>
