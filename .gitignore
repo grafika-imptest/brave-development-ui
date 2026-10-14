@@ -1,0 +1,8 @@
+node_modules/
+mirror/
+shots/
+snaps/
+ref/
+measure-*.json
+shots-*.log
+*.log
