@@ -51,3 +51,4 @@ node tools/shots.mjs --mode=both     # screenshoty Původní/Upravená (shots/)
 node tools/check.mjs        # přetečení, konzole, obrázky, chování hlavičky
 node tools/header-fit.mjs   # vejde se hlavička na 1200–1920 px?
 ```
+

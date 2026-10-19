@@ -6,3 +6,8 @@ ref/
 measure-*.json
 shots-*.log
 *.log
+# V2 Premium Concept — jen lokálně, ne v repozitáři
+docs/v2/
+v2/
+tools/build-v2.mjs
+tools/v2-*.mjs
