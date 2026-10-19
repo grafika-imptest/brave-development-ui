@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="cs" class="v3 no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bytový komplex Hálkova — nové byty v Brně (V3)</title>
+<meta name="description" content="Moderní bydlení na klidném severu Brna. Dva bytové domy, 50 bytů a kompletní občanská vybavenost v dosahu.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/brave-development-ui/www/upload/f0dec1d8/favicon-brave/favicon-brave.32x32.exact.png">
+<script>/* Statický shim pro náhled na GitHub Pages — NENÍ součástí UI úprav.
+   Živý web běží na PHP/Nette; tady jen zařizuje, aby kopie fungovala bez serveru:
+   - AJAX na kořenové cesty míří pod BASE, data map z uložených JSON, signály (?do=…) na prázdnou odpověď,
+   - cookie lišta se dá zavřít (pamatuje si to localStorage),
+   - klasické POST formuláře se neodešlou (server tu není) — ukáže se krátké upozornění,
+   - přepínač Původní / Upravená / Upravená V2 (localStorage + ?puvodni / ?upravene / ?v2). */
+(function () {
+	var B = '/brave-development-ui';
+	window.__BRAVE_BASE = B;
+
+	var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+		set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+	var qs = location.search;
+	if (/[?&]puvodni\b/.test(qs)) store.set('brave-refine', 'off');
+	if (/[?&]upravene\b/.test(qs)) store.set('brave-refine', 'on');
+	if (/[?&]v2\b/.test(qs)) store.set('brave-refine', 'v3');
+	var path = location.pathname, onV3 = path.indexOf(B + '/v3/') === 0;
+	if (onV3) store.set('brave-refine', 'v3');
+	var mode = store.get('brave-refine') || 'on';
+	// homepage v režimu „Upravená V2“ → nový návrh pod /v3/ (podstránky zůstávají upravené)
+	if (mode === 'v3' && (path === B + '/' || path === B + '/index.html')) { location.replace(B + '/v3/'); return; }
+	var off = mode === 'off';
+	window.__BRAVE_REFINE_OFF = off;
+	var html = document.documentElement;
+	html.classList.add('is-static-preview');
+	if (off) html.classList.add('refine-off');
+	if (store.get('brave-static-cookie')) html.classList.add('static-cookie-ok');
+
+	function slug(s) {
+		return s.replace(/^\//, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'root';
+	}
+	function map(u) {
+		if (typeof u !== 'string') return u;
+		var v = u;
+		if (v.indexOf(location.origin) === 0) v = v.slice(location.origin.length);
+		if (v.indexOf('https://demo.bravedevelopment.cz') === 0) v = v.slice(33) || '/';
+		if (v.charAt(0) === '?') v = location.pathname + v;
+		if (v.charAt(0) !== '/' || v.charAt(1) === '/') return u;
+		if (/[?&]do=map-[a-z0-9]+-(options|markers|lines)/i.test(v)) {
+			if (v.indexOf(B + '/') === 0) v = v.slice(B.length) || '/';
+			return B + '/_data/' + slug(v) + '.json';
+		}
+		if (/[?&]_?do=/.test(v)) return B + '/_data/noop.json';
+		if (v.indexOf(B + '/') === 0 || v === B) return u;
+		return B + v;
+	}
+
+	var open = XMLHttpRequest.prototype.open;
+	XMLHttpRequest.prototype.open = function (method, url) {
+		var mapped = map(url);
+		var args = Array.prototype.slice.call(arguments);
+		if (mapped !== url) {
+			args[1] = mapped;
+			// GitHub Pages na POST odpoví 405 — u statických odpovědí stačí GET
+			if (/\/_data\//.test(mapped)) args[0] = 'GET';
+		}
+		return open.apply(this, args);
+	};
+	if (window.fetch) {
+		var f = window.fetch;
+		window.fetch = function (input, init) {
+			if (typeof input === 'string') {
+				var m = map(input);
+				if (m !== input && /\/_data\//.test(m) && init) init = Object.assign({}, init, { method: 'GET', body: undefined });
+				input = m;
+			}
+			return f.call(this, input, init);
+		};
+	}
+
+	function toast(text) {
+		var t = document.createElement('div');
+		t.className = 'staticToast';
+		t.setAttribute('role', 'status');
+		t.textContent = text;
+		document.body.appendChild(t);
+		setTimeout(function () { t.classList.add('is-in'); }, 10);
+		setTimeout(function () { t.classList.remove('is-in'); setTimeout(function () { t.remove(); }, 400); }, 3600);
+	}
+
+	document.addEventListener('submit', function (e) {
+		var form = e.target;
+		if (!form || form.tagName !== 'FORM') return;
+		if (form.id === 'frm-cookieBar-settingsForm') {
+			e.preventDefault();
+			e.stopImmediatePropagation();
+			store.set('brave-static-cookie', '1');
+			html.classList.add('static-cookie-ok');
+			return;
+		}
+		// Bublá až sem, takže validace Nette (na formuláři) už proběhla a případně
+		// odeslání zastavila — upozornění jen u platně vyplněného formuláře.
+		if ((form.method || '').toLowerCase() === 'post' && !form.classList.contains('ajax')) {
+			if (!e.defaultPrevented) {
+				e.preventDefault();
+				toast('Statický náhled: formulář se neodesílá, na živém webu proběhne odeslání.');
+			}
+		}
+	});
+	document.addEventListener('submit', function (e) {
+		var form = e.target;
+		if (form && form.classList && form.classList.contains('ajax') && /reoUnit(Favorite|Comparison)/.test(form.id || '')) {
+			toast('Statický náhled: oblíbené a porovnání ukládá server, zde se neukládají.');
+		}
+	}, true);
+	// Cookie lišta: tlačítka jsou submit inputy uvnitř ajax formuláře
+	document.addEventListener('click', function (e) {
+		var b = e.target && e.target.closest && e.target.closest('#frm-cookieBar-settingsForm [type=submit]');
+		if (!b) return;
+		e.preventDefault();
+		e.stopImmediatePropagation();
+		store.set('brave-static-cookie', '1');
+		html.classList.add('static-cookie-ok');
+	}, true);
+
+	var css = document.createElement('style');
+	css.textContent =
+		'html.static-cookie-ok .cookie-bar-modal{display:none!important}' +
+		'.staticToast{position:fixed;left:50%;bottom:24px;z-index:100000;transform:translate(-50%,12px);opacity:0;max-width:calc(100% - 32px);' +
+		'background:#111;color:#fff;font:500 13px/1.45 Poppins,system-ui,sans-serif;padding:12px 18px;border-radius:8px;box-shadow:0 10px 30px rgb(0 0 0/.25);transition:.3s}' +
+		'.staticToast.is-in{opacity:1;transform:translate(-50%,0)}' +
+		'.refineSwitch{position:fixed;left:16px;bottom:16px;z-index:9990;display:flex;gap:2px;padding:3px;border-radius:999px;background:rgb(17 17 17/.82);' +
+		'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font:600 11px/1 Poppins,system-ui,sans-serif;letter-spacing:.02em;box-shadow:0 6px 20px rgb(0 0 0/.18)}' +
+		'.refineSwitch button{all:unset;cursor:pointer;color:rgb(255 255 255/.7);padding:7px 11px;border-radius:999px;transition:.2s}' +
+		'.refineSwitch button[aria-pressed=true]{background:#fff;color:#111}' +
+		'.refineSwitch button:focus-visible{outline:2px solid #3cd070;outline-offset:2px}' +
+		'.refineSwitch button{position:relative}' +
+		'.refineSwitch__tip{position:absolute;left:0;bottom:calc(100% + 12px);width:260px;padding:12px 14px;background:#111;color:rgb(255 255 255/.78);' +
+		'font:400 12px/1.5 system-ui,sans-serif;letter-spacing:0;white-space:normal;text-align:left;border-radius:8px;box-shadow:0 10px 30px rgb(0 0 0/.25);' +
+		'opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity .18s,transform .18s,visibility 0s .18s;pointer-events:none}' +
+		'.refineSwitch__tip b{display:block;margin-bottom:4px;color:#fff;font-weight:600;font-size:12.5px}' +
+		'.refineSwitch button:hover .refineSwitch__tip,.refineSwitch button:focus-visible .refineSwitch__tip{opacity:1;visibility:visible;transform:none;transition-delay:.25s,.25s,0s}' +
+		'@media (hover:none){.refineSwitch__tip{display:none}}' +
+		'@media print{.refineSwitch{display:none}}';
+	document.head.appendChild(css);
+
+	document.addEventListener('DOMContentLoaded', function () {
+		var s = document.createElement('div');
+		s.className = 'refineSwitch';
+		s.setAttribute('role', 'group');
+		s.setAttribute('aria-label', 'Verze náhledu');
+		// Krátký popis každé verze v tooltipu (hover i fokus klávesnicí)
+		var tips = {
+			off: ['Původní šablona', 'Web přesně tak, jak běží na demo.bravedevelopment.cz. Beze změn — slouží ke srovnání.'],
+			on: ['Upravená', 'Stejný obsah i funkce jako původní, jen doladěný vzhled: kompaktní hlavička, která se při scrollu schová, širší rozvržení, čistší písmo a mezery. Platí pro celý web.'],
+			v3: ['Upravená V2', 'Nový návrh úvodní stránky: panoráma přes celou obrazovku s vyhledávačem, ostré rohy, nové písmo a texty. Zatím jen homepage — podstránky se zobrazí v Upravené verzi.']
+		};
+		function btn(v, label, on) {
+			return '<button type="button" data-v="' + v + '" aria-pressed="' + on + '" aria-describedby="rs-tip-' + v + '">' + label +
+				'<span class="refineSwitch__tip" role="tooltip" id="rs-tip-' + v + '"><b>' + tips[v][0] + '</b>' + tips[v][1] + '</span></button>';
+		}
+		s.innerHTML = btn('off', 'Původní', off) + btn('on', 'Upravená', mode === 'on') + btn('v3', 'Upravená V2', mode === 'v3');
+		s.addEventListener('click', function (e) {
+			var b = e.target.closest('button');
+			if (!b || b.getAttribute('aria-pressed') === 'true') return;
+			var v = b.getAttribute('data-v');
+			store.set('brave-refine', v);
+			if (v === 'v3') location.href = B + '/v3/';
+			else if (onV3) location.href = B + '/';
+			else location.reload();
+		});
+		document.body.appendChild(s);
+	});
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.2/dist/leaflet.css" crossorigin>
+<link rel="stylesheet" href="/brave-development-ui/v3/assets/v3.css">
+<script src="/brave-development-ui/www/Development/cache/9710ee2e4fc1b09cbf7a1a22a72e21d1.js?modified=1791282034"></script>
+</head>
+<body>
+<a class="skip" href="#obsah">Přeskočit na obsah</a>
+<header class="nav">
+	<div class="w nav__in">
+		<a class="nav__logo" href="/brave-development-ui/v3/" aria-label="Bytový komplex Hálkova"><img src="/brave-development-ui/www/upload/f0dec1d8/logo-development.svg" alt="Bytový komplex Hálkova" width="233" height="59"></a>
+		<nav class="nav__links" aria-label="Hlavní menu"><a href="/brave-development-ui/o-projektu/">O projektu</a><a href="/brave-development-ui/standardy/">Standardy</a><a href="/brave-development-ui/lokalita/">Lokalita</a><a href="/brave-development-ui/financovani/">Financování</a><a href="/brave-development-ui/galerie/">Galerie</a><a href="/brave-development-ui/faq/">Časté otázky</a><a href="/brave-development-ui/o-nas/">O nás</a><a href="/brave-development-ui/aktuality/">Aktuality</a><a href="/brave-development-ui/kontakty/">Kontakt</a></nav>
+		<div class="nav__right">
+			<a class="nav__icon" href="/brave-development-ui/oblibene-nemovitosti/" title="Oblíbené" aria-label="Oblíbené (0)"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span class="n">0</span></a>
+			<a class="nav__icon" href="/brave-development-ui/porovnani-jednotek/" title="Porovnání" aria-label="Porovnání (0)"><svg viewBox="0 0 24 24"><path d="M12 4v16M5 20h14M4 8h16M7 8l-3 6a3 3 0 0 0 6 0L7 8zm10 0-3 6a3 3 0 0 0 6 0l-3-6z"/></svg><span class="n">0</span></a>
+			<div class="nav__lang"><button type="button" aria-haspopup="true" aria-expanded="false" aria-label="Jazyk">CS <svg width="9" height="6" viewBox="0 0 9 6" aria-hidden="true"><path d="M1 1l3.5 3.5L8 1" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></button>
+				<ul><li><a href="/brave-development-ui/" aria-current="true">CS <span>✓</span></a></li><li><a href="/brave-development-ui/">EN</a></li></ul></div>
+			<a class="btn btn--line nav__cta" href="/brave-development-ui/nabidka-nemovitosti/"><svg viewBox="0 0 16 16"><path d="M2 7.5 8 2l6 5.5M3.5 6.5V14h9V6.5"/></svg>Volné byty a ceník</a>
+			<button class="nav__burger" type="button" data-burger aria-expanded="false" aria-controls="drawer" aria-label="Menu"><i></i></button>
+		</div>
+	</div>
+</header>
+<div class="drawer" id="drawer">
+	<ul><li><a href="/brave-development-ui/o-projektu/">O projektu<span aria-hidden="true">→</span></a></li><li><a href="/brave-development-ui/standardy/">Standardy<span aria-hidden="true">→</span></a></li><li><a href="/brave-development-ui/lokalita/">Lokalita<span aria-hidden="true">→</span></a></li><li><a href="/brave-development-ui/financovani/">Financování<span aria-hidden="true">→</span></a></li><li><a href="/brave-development-ui/galerie/">Galerie<span aria-hidden="true">→</span></a></li><li><a href="/brave-development-ui/faq/">Časté otázky<span aria-hidden="true">→</span></a></li><li><a href="/brave-development-ui/o-nas/">O nás<span aria-hidden="true">→</span></a></li><li><a href="/brave-development-ui/aktuality/">Aktuality<span aria-hidden="true">→</span></a></li><li><a href="/brave-development-ui/kontakty/">Kontakt<span aria-hidden="true">→</span></a></li></ul>
+	<div class="drawer__tools">
+		<a class="btn" href="/brave-development-ui/nabidka-nemovitosti/">Volné byty a ceník</a>
+		<a class="btn btn--line" href="/brave-development-ui/oblibene-nemovitosti/">Oblíbené (0)</a>
+		<a class="btn btn--line" href="/brave-development-ui/porovnani-jednotek/">Porovnání (0)</a>
+		<a class="btn btn--line" href="/brave-development-ui/">CS</a><a class="btn btn--line" href="/brave-development-ui/">EN</a>
+	</div>
+</div>
+<main id="obsah">
+<section class="hero">
+	<div class="hero__pano"><script type="module" src="/brave-development-ui/v3/assets/panorama360.js"></script><section class="panoramaHero" data-panorama-hero data-label-direction="Směr k objektu" data-label-ready="360° pohled je připravený" data-label-error="Interaktivní pohled se nepodařilo načíst. Zobrazuje se náhled fotografie." style="--panorama-vignette-opacity: 1" aria-labelledby="panorama-title-1"> <script type="application/json" data-panorama-markers>[{"id":"panorama-marker-1","kind":"complex","label":"Bytové domy Hálkova","detail":"ul. Hálkova, Brno","translations":{"cs":{"label":"Bytové domy Hálkova","detail":"ul. Hálkova, Brno"},"en":{"label":"Halkova Apartment Buildings","detail":"Halkova Street, Brno"}},"icon":"mdi-home-city-outline","yaw":-6.5999999999999996,"pitch":-21.600000000000001},{"id":"panorama-marker-2","kind":"poi","label":"Zastávka MHD Náměstí Republiky","detail":"náměstí Republiky, Brno","translations":{"cs":{"label":"Zastávka MHD Náměstí Republiky","detail":"náměstí Republiky, Brno"},"en":{"label":"Namesti Republiky public transport stop","detail":"Namesti Republiky, Brno"}},"icon":"mdi-bus-stop","yaw":-80.799999999999997,"pitch":-35.600000000000001,"mapMarkerId":7,"link":""},{"id":"panorama-marker-3","kind":"poi","label":"ZŠ a MŠ Sluníčko — Montessori","detail":"Hálkova 84, Brno","translations":{"cs":{"label":"ZŠ a MŠ Sluníčko — Montessori","detail":"Hálkova 84, Brno"},"en":{"label":"Slunicko Montessori nursery and primary school","detail":"Halkova 84, Brno"}},"icon":"mdi-school-outline","yaw":50,"pitch":-7.5,"mapMarkerId":6,"link":""},{"id":"panorama-marker-4","kind":"poi","label":"ZŠ a MŠ J. A. Komenského","detail":"nám. Republiky 1536\/10, Brno","translations":{"cs":{"label":"ZŠ a MŠ J. A. Komenského","detail":"nám. Republiky 1536\/10, Brno"},"en":{"label":"J. A. Komensky nursery and primary school","detail":"Namesti Republiky 1536\/10, Brno"}},"icon":"mdi-teddy-bear","yaw":-35.5,"pitch":-7.5,"mapMarkerId":5,"link":""},{"id":"panorama-marker-5","kind":"poi","label":"Obchody a lékárna","detail":"","translations":{"cs":{"label":"Obchody a lékárna","detail":""},"en":{"label":"Shops and pharmacy","detail":""}},"icon":"mdi-store-outline","yaw":27.399999999999999,"pitch":-15.699999999999999},{"id":"panorama-marker-6","kind":"poi","label":"Restaurace","detail":"","translations":{"cs":{"label":"Restaurace","detail":""},"en":{"label":"Restaurants","detail":""}},"icon":"mdi-silverware-fork-knife","yaw":-59.5,"pitch":-19.300000000000001},{"id":"panorama-marker-7","kind":"poi","label":"Park Tišnovka","detail":"Svitavská, Brno","translations":{"cs":{"label":"Park Tišnovka","detail":"Svitavská, Brno"},"en":{"label":"Tisnovka Park","detail":"Svitavska, Brno"}},"icon":"mdi-tree-outline","yaw":139.19999999999999,"pitch":-6.5999999999999996,"mapMarkerId":16,"link":""},{"id":"panorama-marker-8","kind":"polygon","label":"Budova A","detail":"6 pater, 25 jednotek","translations":{"cs":{"label":"Budova A","detail":"6 pater, 25 jednotek"},"en":{"label":"Building A","detail":"6 floors, 25 apartments"}},"points":[[-50.799999999999997,-44.100000000000001],[-29.899999999999999,-50.700000000000003],[-29.600000000000001,-50.700000000000003],[-10.6,-35.799999999999997],[-10.699999999999999,-23.100000000000001],[-12.9,-23.199999999999999],[-12.699999999999999,-20.199999999999999],[-25.800000000000001,-18.899999999999999],[-47.799999999999997,-25.300000000000001],[-47.799999999999997,-28.600000000000001],[-50.5,-29.300000000000001]],"linkType":"partFilter","linkTargetIds":[42,43,44,45],"linkTargetLabel":"Bytový komplex Hálkova — Dům A","link":"\/brave-development-ui\/nabidka-nemovitosti\/_q\/reounitfilter-filter-pp-42-43-44-45\/"},{"id":"panorama-marker-9","kind":"polygon","label":"Budova B","detail":"4 patra, 25 jednotek","translations":{"cs":{"label":"Budova B","detail":"4 patra, 25 jednotek"},"en":{"label":"Building B","detail":"4 floors, 25 apartments"}},"points":[[-7.2000000000000002,-39.899999999999999],[27.5,-43.799999999999997],[28.800000000000001,-36.5],[28.800000000000001,-36.200000000000003],[28.600000000000001,-29.199999999999999],[25.399999999999999,-29.100000000000001],[25.399999999999999,-26.5],[-2.7000000000000002,-24.5],[-7.2000000000000002,-28.300000000000001]],"linkType":"partFilter","linkTargetIds":[46,47,48,49,50,51],"linkTargetLabel":"Bytový komplex Hálkova — Dům B","link":"\/brave-development-ui\/nabidka-nemovitosti\/_q\/reounitfilter-filter-pp-46-47-48-49-50-51\/"}]</script> <div class="panoramaHero__media"> <picture> <source media="(max-width: 639px)" srcset="/brave-development-ui/www/upload/4688ec66/20260908001324464/20260908001324464.1440x720.qa-70.webp" type="image/webp"> <img class="panoramaHero__fallback" src="/brave-development-ui/www/upload/4688ec66/20260908001324464/20260908001324464.2048x1024.qa-82.webp" alt="Bytový komplex Hálkova" width="2048" height="1024"> </picture> <div class="panoramaHero__viewer" data-panorama-viewer data-panorama-src="/brave-development-ui/www/upload/4688ec66/20260908001324464.webp" data-panorama-src-preview="/brave-development-ui/www/upload/4688ec66/20260908001324464/20260908001324464.2048x1024.qa-82.webp" data-panorama-src-mobile="/brave-development-ui/www/upload/4688ec66/20260908001324464/20260908001324464.1440x720.qa-70.webp" data-panorama-yaw="-30" data-panorama-pitch="-12" data-panorama-zoom="0" data-panorama-max-fov="100" aria-label="Interaktivní 360° pohled: Bytový komplex Hálkova"></div> </div> <div class="panoramaHero__shade" aria-hidden="true"></div>  <div class="panoramaHero__copy container"> <div class="panoramaHero__copyInner"> <p class="subtitle">Brno - sever · 2 bytové domy · 50 bytů</p> <p id="panorama-title-1">Bytový komplex Hálkova</p> <div class="panoramaHero__lead">Moderní bydlení na klidném severu Brna. <br> Dva bytové domy, 50 bytů a kompletní občanská vybavenost v dosahu.</div> <p class="panoramaHero__cta"> <a href="/brave-development-ui/nabidka-nemovitosti/" class="button">ZOBRAZIT VŠECHNY BYTY<i class="mdi mdi-chevron-right" aria-hidden="true"></i></a> </p> </div> </div> <div class="panoramaHero__hint" aria-hidden="true"> <i class="mdi mdi-cursor-move"></i><span>Tažením se rozhlédnete</span> </div> <p class="panoramaHero__status" data-panorama-status aria-live="polite">Načítám 360° pohled…</p> </section><div class="panoHint" aria-hidden="true"><span class="panoHint__hand"><svg viewBox="0 0 32 32"><path d="M12.5 17.5V6.8a2 2 0 0 1 4 0v8.4m0-1.6v-1.4a2 2 0 0 1 4 0v2.2m0-.6a2 2 0 0 1 4 0v1.6m0 0a2 2 0 0 1 3.6-.9c.3.4.4.9.4 1.4v4.6c0 4.4-3.3 7.5-7.6 7.5h-1.6c-2.6 0-4.4-1.1-5.9-3.2l-4.1-5.9a2 2 0 0 1 3.1-2.5l1.9 2.1"/></svg></span><span class="panoHint__txt">Táhněte a rozhlédněte se 360°</span></div></div>
+	<div class="hero__over">
+		<div class="w hero__in">
+			<div class="hero__copy">
+				<p class="eyebrow hero__eyebrow">Bytový komplex Hálkova · Brno - sever</p>
+				<h1 class="h1 hero__h1">Najděte domov na klidném severu Brna</h1>
+				<p class="lead hero__lead">Moderní bydlení na klidném severu Brna. Dva bytové domy, 50 bytů a kompletní občanská vybavenost v dosahu.</p>
+				<div class="hero__cta"><a class="btn btn--white" href="/brave-development-ui/nabidka-nemovitosti/">Zobrazit všechny byty</a><a class="btn btn--glass" href="/brave-development-ui/kontakty/">Domluvit prohlídku</a></div>
+			</div>
+			<form class="srch hero__srch" data-search action="/brave-development-ui/nabidka-nemovitosti/" method="get" aria-label="Rychlé vyhledávání bytů" data-r>
+			<div class="tabs" role="tablist" aria-label="Dům">
+				<button type="button" role="tab" data-bld="" aria-selected="true">Všechny byty</button>
+				<button type="button" role="tab" data-bld="A" aria-selected="false">Dům A</button><button type="button" role="tab" data-bld="B" aria-selected="false">Dům B</button>
+			</div>
+			<div class="filter">
+				<div class="filter__row">
+					<div class="field"><label for="q-d">Dispozice</label><select id="q-d" name="quickDisposition[]"><option value="">Všechny dispozice</option><option value="7">1+kk</option><option value="8">2+kk</option><option value="9">3+kk</option><option value="6">4+kk</option></select></div>
+					<div class="field"><label for="q-f">Patro</label><select id="q-f" name="quickFloor[]"><option value="">Všechna podlaží</option><option value="42" data-b="A">Dům A – 1. NP</option><option value="43" data-b="A">Dům A – 2. NP</option><option value="44" data-b="A">Dům A – 3. NP</option><option value="45" data-b="A">Dům A – 4. NP</option><option value="46" data-b="B">Dům B – 1. NP</option><option value="47" data-b="B">Dům B – 2. NP</option><option value="48" data-b="B">Dům B – 3. NP</option><option value="49" data-b="B">Dům B – 4. NP</option><option value="50" data-b="B">Dům B – 5. NP</option><option value="51" data-b="B">Dům B – 6. NP</option></select></div>
+					<div class="field"><label for="q-a">Užitná plocha</label><select id="q-a" name="quickArea[]"><option value="">Všechny plochy (m²)</option><option value="0-50">do 50 m²</option><option value="50-70">50–70 m²</option><option value="70-100">70–100 m²</option><option value="100-9999">nad 100 m²</option></select></div>
+					<div class="field"><label for="q-p">Cena</label><select id="q-p" name="quickPrice[]"><option value="">Všechny ceny</option><option value="0-4000000">do 4 mil. Kč</option><option value="4000000-6000000">4–6 mil. Kč</option><option value="6000000-8000000">6–8 mil. Kč</option><option value="8000000-999999999">nad 8 mil. Kč</option></select></div>
+				</div>
+				<input type="hidden" name="quickDispositionOption" value="6"><input type="hidden" name="quickAreaOption" value="1">
+				<div class="filter__foot">
+					<a class="btn btn--ghost" href="/brave-development-ui/nabidka-nemovitosti/"><svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>Další možnosti</a>
+					<span class="filter__count" data-count aria-live="polite"></span>
+					<div class="sp"><button class="btn btn--ghost" type="button" data-clear><svg viewBox="0 0 16 16"><path d="M3 4h10M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg>Vymazat filtry</button><button class="btn" type="submit">Zobrazit byty</button></div>
+				</div>
+			</div>
+		</form>
+		</div>
+	</div>
+</section>
+<section class="sec">
+	<div class="w">
+		<div class="head" data-r><h2 class="h2">Byty podle dispozice</h2><p class="lead">Rychlý přehled volných bytů v obou domech. Kliknutím zobrazíte všechny byty dané dispozice.</p></div>
+		<div class="cards"><a class="card" href="/brave-development-ui/nabidka-nemovitosti/_q/reounitfilter-filter-os-6-7/" data-r>
+				<div class="card__img"><img src="/brave-development-ui/www/upload/ee4c3145/20260831070001787/20260831070001787.1113x660.webp" alt="Vizualizace interiéru, byt A.01.01" loading="lazy" width="1113" height="660"><span class="card__badge">5 volných</span></div>
+				<div class="card__body">
+					<div class="card__top"><h3 class="card__title">Byty 1+kk</h3><span class="card__price">od 3 082 000 Kč</span></div>
+					<p class="card__sub">Bytový komplex Hálkova · Dům A · Dům B</p>
+					<dl class="card__bld"><dt>Budova A</dt><dd>4 volné byty · od 3 082 000 Kč</dd><dt>Budova B</dt><dd>1 volný byt · od 7 089 000 Kč</dd></dl>
+					<div class="meta"><span><svg viewBox="0 0 16 16"><path d="M2 2h12v12H2zM2 6h4V2M14 10h-4v4"/></svg>32,4–73,2 m²</span><span><svg viewBox="0 0 16 16"><path d="M8 2 1.5 5.5 8 9l6.5-3.5zM1.5 8.5 8 12l6.5-3.5"/></svg>10 bytů v projektu</span></div>
+				</div>
+			</a><a class="card" href="/brave-development-ui/nabidka-nemovitosti/_q/reounitfilter-filter-os-6-8/" data-r>
+				<div class="card__img"><img src="/brave-development-ui/www/upload/ee4c3145/20260831070001928/20260831070001928.1113x660.webp" alt="Vizualizace interiéru, byt A.01.03" loading="lazy" width="1113" height="660"><span class="card__badge">13 volných</span></div>
+				<div class="card__body">
+					<div class="card__top"><h3 class="card__title">Byty 2+kk</h3><span class="card__price">od 4 918 000 Kč</span></div>
+					<p class="card__sub">Bytový komplex Hálkova · Dům A · Dům B</p>
+					<dl class="card__bld"><dt>Budova A</dt><dd>8 volných bytů · od 4 918 000 Kč</dd><dt>Budova B</dt><dd>5 volných bytů · od 5 149 000 Kč</dd></dl>
+					<div class="meta"><span><svg viewBox="0 0 16 16"><path d="M2 2h12v12H2zM2 6h4V2M14 10h-4v4"/></svg>48,8–109,8 m²</span><span><svg viewBox="0 0 16 16"><path d="M8 2 1.5 5.5 8 9l6.5-3.5zM1.5 8.5 8 12l6.5-3.5"/></svg>17 bytů v projektu</span></div>
+				</div>
+			</a><a class="card" href="/brave-development-ui/nabidka-nemovitosti/_q/reounitfilter-filter-os-6-9/" data-r>
+				<div class="card__img"><img src="/brave-development-ui/www/upload/ee4c3145/20260831070002124/20260831070002124.1113x660.webp" alt="Vizualizace interiéru, byt A.01.06" loading="lazy" width="1113" height="660"><span class="card__badge">13 volných</span></div>
+				<div class="card__body">
+					<div class="card__top"><h3 class="card__title">Byty 3+kk</h3><span class="card__price">od 5 672 000 Kč</span></div>
+					<p class="card__sub">Bytový komplex Hálkova · Dům A · Dům B</p>
+					<dl class="card__bld"><dt>Budova A</dt><dd>5 volných bytů · od 5 672 000 Kč</dd><dt>Budova B</dt><dd>8 volných bytů · od 8 510 000 Kč</dd></dl>
+					<div class="meta"><span><svg viewBox="0 0 16 16"><path d="M2 2h12v12H2zM2 6h4V2M14 10h-4v4"/></svg>59,7–133,5 m²</span><span><svg viewBox="0 0 16 16"><path d="M8 2 1.5 5.5 8 9l6.5-3.5zM1.5 8.5 8 12l6.5-3.5"/></svg>20 bytů v projektu</span></div>
+				</div>
+			</a><a class="card" href="/brave-development-ui/nabidka-nemovitosti/_q/reounitfilter-filter-os-6-6/" data-r>
+				<div class="card__img"><img src="/brave-development-ui/www/upload/ee4c3145/20260901203927764/20260901203927764.1113x660.webp" alt="Vizualizace interiéru, byt A.04.05" loading="lazy" width="1113" height="660"><span class="card__badge">3 volné</span></div>
+				<div class="card__body">
+					<div class="card__top"><h3 class="card__title">Byty 4+kk</h3><span class="card__price">od 9 796 000 Kč</span></div>
+					<p class="card__sub">Bytový komplex Hálkova · Dům A · Dům B</p>
+					<dl class="card__bld"><dt>Budova A</dt><dd>1 volný byt · od 9 796 000 Kč</dd><dt>Budova B</dt><dd>2 volné byty · od 11 259 000 Kč</dd></dl>
+					<div class="meta"><span><svg viewBox="0 0 16 16"><path d="M2 2h12v12H2zM2 6h4V2M14 10h-4v4"/></svg>89,2–133,5 m²</span><span><svg viewBox="0 0 16 16"><path d="M8 2 1.5 5.5 8 9l6.5-3.5zM1.5 8.5 8 12l6.5-3.5"/></svg>3 byty v projektu</span></div>
+				</div>
+			</a></div>
+	</div>
+</section>
+<section class="sec">
+	<div class="w">
+		<div class="head" data-r><h2 class="h2">Vyberte si byt přímo v našem domě</h2><p class="lead">Najeďte na podlaží a uvidíte, kolik bytů je na něm volných. Kliknutím otevřete jeho půdorys.</p></div>
+		<div class="kpis" data-r>
+			<div class="kpi"><span class="label">Volné byty</span><span class="kpi__val">34<small>z 50</small></span><div class="bars" aria-label="Volné byty podle podlaží"><i style="height:100%" data-t="Dům A – 1. NP: 5"></i><i style="height:100%" data-t="Dům A – 2. NP: 5"></i><i style="height:80%" data-t="Dům A – 3. NP: 4"></i><i style="height:80%" data-t="Dům A – 4. NP: 4"></i><i style="height:60%" data-t="Dům B – 1. NP: 3"></i><i style="height:60%" data-t="Dům B – 2. NP: 3"></i><i style="height:60%" data-t="Dům B – 3. NP: 3"></i><i style="height:40%" data-t="Dům B – 4. NP: 2"></i><i style="height:60%" data-t="Dům B – 5. NP: 3"></i><i style="height:40%" data-t="Dům B – 6. NP: 2"></i></div></div>
+			<div class="kpi"><span class="label">Ceny volných bytů od</span><span class="kpi__val">3 082 000<small>Kč</small></span><div class="bars" aria-label="Nejnižší cena podle dispozice"><i style="height:31%" data-t="1+kk: od 3 082 000 Kč"></i><i style="height:50%" data-t="2+kk: od 4 918 000 Kč"></i><i style="height:58%" data-t="3+kk: od 5 672 000 Kč"></i><i style="height:100%" data-t="4+kk: od 9 796 000 Kč"></i></div></div>
+			<div class="kpi"><span class="label">Dispozice v projektu</span><span class="kpi__val">1+kk – 4+kk</span><div class="bars" aria-label="Počet bytů podle dispozice"><i style="height:50%" data-t="1+kk: 10 bytů"></i><i style="height:85%" data-t="2+kk: 17 bytů"></i><i style="height:100%" data-t="3+kk: 20 bytů"></i><i style="height:15%" data-t="4+kk: 3 bytů"></i></div></div>
+		</div>
+		<div class="house" data-house data-r>
+			<img src="/brave-development-ui/www/upload/4444a161/20260831070015086/20260831070015086.1600x800.qa-98.webp" alt="Vizualizace bytových domů A a B" width="1600" height="800" loading="lazy">
+			<svg viewBox="0 0 1600 800" preserveAspectRatio="none" aria-label="Podlaží domů"><a href="/brave-development-ui/dum-a-1-np/" aria-label="Dům A – 1. NP: 5 volných bytů z 6"><polygon class="band" points="184,477 736,477 736,539 184,539" data-tip="&lt;b&gt;Dům A – 1. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;5 z 6&lt;/strong&gt;&lt;/span&gt;"></polygon></a><a href="/brave-development-ui/dum-a-2-np/" aria-label="Dům A – 2. NP: 5 volných bytů z 7"><polygon class="band" points="184,414 736,414 736,477 184,477" data-tip="&lt;b&gt;Dům A – 2. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;5 z 7&lt;/strong&gt;&lt;/span&gt;"></polygon></a><a href="/brave-development-ui/dum-a-3-np/" aria-label="Dům A – 3. NP: 4 volné byty z 7"><polygon class="band" points="184,352 736,352 736,414 184,414" data-tip="&lt;b&gt;Dům A – 3. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;4 z 7&lt;/strong&gt;&lt;/span&gt;"></polygon></a><a href="/brave-development-ui/dum-a-4-np/" aria-label="Dům A – 4. NP: 4 volné byty z 5"><polygon class="band" points="184,294 736,294 736,352 184,352" data-tip="&lt;b&gt;Dům A – 4. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;4 z 5&lt;/strong&gt;&lt;/span&gt;"></polygon></a><a href="/brave-development-ui/dum-b-1-np/" aria-label="Dům B – 1. NP: 3 volné byty z 4"><polygon class="band" points="850,507 1328,507 1328,557 850,557" data-tip="&lt;b&gt;Dům B – 1. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;3 z 4&lt;/strong&gt;&lt;/span&gt;"></polygon></a><a href="/brave-development-ui/dum-b-2-np/" aria-label="Dům B – 2. NP: 3 volné byty z 5"><polygon class="band" points="850,458 1328,458 1328,507 850,507" data-tip="&lt;b&gt;Dům B – 2. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;3 z 5&lt;/strong&gt;&lt;/span&gt;"></polygon></a><a href="/brave-development-ui/dum-b-3-np/" aria-label="Dům B – 3. NP: 3 volné byty z 5"><polygon class="band" points="850,408 1328,408 1328,458 850,458" data-tip="&lt;b&gt;Dům B – 3. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;3 z 5&lt;/strong&gt;&lt;/span&gt;"></polygon></a><a href="/brave-development-ui/dum-b-4-np/" aria-label="Dům B – 4. NP: 2 volné byty z 5"><polygon class="band" points="850,358 1328,358 1328,408 850,408" data-tip="&lt;b&gt;Dům B – 4. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;2 z 5&lt;/strong&gt;&lt;/span&gt;"></polygon></a><a href="/brave-development-ui/dum-b-5-np/" aria-label="Dům B – 5. NP: 3 volné byty z 4"><polygon class="band" points="850,309 1328,309 1328,358 850,358" data-tip="&lt;b&gt;Dům B – 5. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;3 z 4&lt;/strong&gt;&lt;/span&gt;"></polygon></a><a href="/brave-development-ui/dum-b-6-np/" aria-label="Dům B – 6. NP: 2 volné byty z 2"><polygon class="band" points="850,261 1328,261 1328,309 850,309" data-tip="&lt;b&gt;Dům B – 6. NP&lt;/b&gt;&lt;span&gt;Volné byty &lt;strong&gt;2 z 2&lt;/strong&gt;&lt;/span&gt;"></polygon></a></svg>
+			<span class="tag">Vizualizace</span>
+			<div class="house__tip" aria-hidden="true"></div>
+		</div>
+		<div class="house__bar">
+			<div class="floors"><a href="/brave-development-ui/dum-a-1-np/">Dům A – 1. NP<i>5</i></a><a href="/brave-development-ui/dum-a-2-np/">Dům A – 2. NP<i>5</i></a><a href="/brave-development-ui/dum-a-3-np/">Dům A – 3. NP<i>4</i></a><a href="/brave-development-ui/dum-a-4-np/">Dům A – 4. NP<i>4</i></a><a href="/brave-development-ui/dum-b-1-np/">Dům B – 1. NP<i>3</i></a><a href="/brave-development-ui/dum-b-2-np/">Dům B – 2. NP<i>3</i></a><a href="/brave-development-ui/dum-b-3-np/">Dům B – 3. NP<i>3</i></a><a href="/brave-development-ui/dum-b-4-np/">Dům B – 4. NP<i>2</i></a><a href="/brave-development-ui/dum-b-5-np/">Dům B – 5. NP<i>3</i></a><a href="/brave-development-ui/dum-b-6-np/">Dům B – 6. NP<i>2</i></a></div>
+			<a class="btn" href="/brave-development-ui/nabidka-nemovitosti/">Zobrazit všechny byty</a>
+		</div>
+	</div>
+</section>
+<section class="sec">
+	<div class="w">
+		<div class="head" data-r><h2 class="h2">Zabydlete se na severu Brna</h2><p class="lead">Lokalita s výbornou dostupností. Hálkova 12, 602 00 Brno</p></div>
+		<div class="split" data-r>
+			<div class="panel">
+				<h3 class="h3">Vše důležité v docházkové vzdálenosti</h3>
+				<p>Ulice Hálkova leží v klidné rezidenční čtvrti na severu Brna. Zastávku MHD máte tři minuty pěšky, školu i školku v docházkové vzdálenosti a večerní procházku rovnou z domu do lesa.</p>
+				<ul class="checks"><li><i class="mdi mdi-basketball" aria-hidden="true"></i>Vnitřní i venkovní sportoviště na dosah</li><li><i class="mdi mdi-school-outline" aria-hidden="true"></i>ZŠ a MŠ do 2 km od domu</li><li><i class="mdi mdi-silverware-fork-knife" aria-hidden="true"></i>3 restaurace do 1 km</li><li><i class="mdi mdi-store-outline" aria-hidden="true"></i>Lékárna a obchody v těsné blízkosti</li><li><i class="mdi mdi-bus-stop" aria-hidden="true"></i>MHD 350 m od domu</li></ul>
+				<a class="btn btn--line" href="/brave-development-ui/lokalita/">Více o lokalitě</a>
+			</div>
+			<div class="mapBox"> <div data-map-id="6acfa8909fc10" data-map-options-endpoint="/brave-development-ui/v3/assets/map-options.json" data-map-markers-endpoint="/brave-development-ui/v3/assets/map-markers.json" data-map-lines-endpoint="/brave-development-ui/?do=map-main-lines" class="uk-width-1-1 uk-height-medium"> </div> <script>
+	$(window).on('load', function(){
+		new OsmMapLoader("6acfa8909fc10", '', { rootMargin: '-100px', threshold: 0 });
+	});
+</script> </div>
+		</div>
+	</div>
+</section>
+<section class="sec">
+	<div class="w">
+		<div class="head" data-r><h2 class="h2">Prohlédněte si nové bydlení</h2><p class="lead">Vizualizace exteriérů a interiérů projektu. Kliknutím obrázek zvětšíte.</p></div>
+		<div class="gallery" data-r><button type="button" data-lb="/brave-development-ui/www/upload/864e8d94/20260903183454384/20260903183454384.webp" aria-label="Vizualizace 1"><img src="/brave-development-ui/www/upload/864e8d94/20260903183454384/20260903183454384.500x300.webp" alt="Vizualizace projektu 1" loading="lazy"></button><button type="button" data-lb="/brave-development-ui/www/upload/864e8d94/20260903183454412/20260903183454412.webp" aria-label="Vizualizace 2"><img src="/brave-development-ui/www/upload/864e8d94/20260903183454412/20260903183454412.500x300.webp" alt="Vizualizace projektu 2" loading="lazy"></button><button type="button" data-lb="/brave-development-ui/www/upload/864e8d94/20260903183454437/20260903183454437.webp" aria-label="Vizualizace 3"><img src="/brave-development-ui/www/upload/864e8d94/20260903183454437/20260903183454437.500x300.webp" alt="Vizualizace projektu 3" loading="lazy"></button><button type="button" data-lb="/brave-development-ui/www/upload/864e8d94/20260903183454460/20260903183454460.webp" aria-label="Vizualizace 4"><img src="/brave-development-ui/www/upload/864e8d94/20260903183454460/20260903183454460.500x300.webp" alt="Vizualizace projektu 4" loading="lazy"></button><button type="button" data-lb="/brave-development-ui/www/upload/864e8d94/20260903183454486/20260903183454486.webp" aria-label="Vizualizace 5"><img src="/brave-development-ui/www/upload/864e8d94/20260903183454486/20260903183454486.500x300.webp" alt="Vizualizace projektu 5" loading="lazy"></button><button type="button" data-lb="/brave-development-ui/www/upload/864e8d94/20260903183454509/20260903183454509.webp" aria-label="Vizualizace 6"><img src="/brave-development-ui/www/upload/864e8d94/20260903183454509/20260903183454509.500x300.webp" alt="Vizualizace projektu 6" loading="lazy"></button></div>
+		<div class="gallery__foot"><span class="label">6 vizualizací na úvodu · další v galerii</span><a class="btn btn--line" href="/brave-development-ui/galerie/">Zobrazit galerii</a></div>
+	</div>
+</section>
+<section class="sec">
+	<div class="w">
+		<div class="head" data-r><h2 class="h2">Jak postupuje výstavba?</h2><p class="lead">Ze života projektu: novinky ze stavby a z prodeje.</p></div>
+		<div class="rows"><article class="row" data-r>
+			<a class="row__img" href="/brave-development-ui/aktuality/dokoncili-jsme-fasadu-a-okna/" tabindex="-1" aria-hidden="true"><img src="/brave-development-ui/www/upload/e7d2f381/20260903193028697/20260903193028697.500x400.webp" alt="" loading="lazy" width="500" height="400"></a>
+			<div class="row__body">
+				<h3><a href="/brave-development-ui/aktuality/dokoncili-jsme-fasadu-a-okna/">Dokončili jsme fasádu a okna</a></h3>
+				<div class="row__meta"><span>15. 7. 2026</span><span>Výstavba</span></div>
+				<p>Dům dostal finální fasádu a osazená okna. Uvnitř se pracuje na rozvodech a příčkách.</p>
+				<div class="acts"><a class="btn" href="/brave-development-ui/aktuality/dokoncili-jsme-fasadu-a-okna/">Číst článek</a></div>
+			</div>
+			<div class="row__aside"><span class="v">15. 7. 2026</span><span class="label">Publikováno</span><span class="v">Výstavba</span><span class="label">Kategorie</span></div>
+		</article><article class="row" data-r>
+			<a class="row__img" href="/brave-development-ui/aktuality/rezervovano-prvnich-pet-bytu/" tabindex="-1" aria-hidden="true"><img src="/brave-development-ui/www/upload/e7d2f381/20260903193028681/20260903193028681.500x400.webp" alt="" loading="lazy" width="500" height="400"></a>
+			<div class="row__body">
+				<h3><a href="/brave-development-ui/aktuality/rezervovano-prvnich-pet-bytu/">Rezervováno prvních pět bytů</a></h3>
+				<div class="row__meta"><span>2. 7. 2026</span><span>Prodej</span></div>
+				<p>Prvních pět z 50 bytů už má rezervaci. V nabídce zůstávají další dispozice od 1+kk po 4+kk.</p>
+				<div class="acts"><a class="btn" href="/brave-development-ui/aktuality/rezervovano-prvnich-pet-bytu/">Číst článek</a></div>
+			</div>
+			<div class="row__aside"><span class="v">2. 7. 2026</span><span class="label">Publikováno</span><span class="v">Prodej</span><span class="label">Kategorie</span></div>
+		</article><article class="row" data-r>
+			<a class="row__img" href="/brave-development-ui/aktuality/hruba-stavba-je-dokoncena/" tabindex="-1" aria-hidden="true"><img src="/brave-development-ui/www/upload/e7d2f381/20260903193028666/20260903193028666.500x400.webp" alt="" loading="lazy" width="500" height="400"></a>
+			<div class="row__body">
+				<h3><a href="/brave-development-ui/aktuality/hruba-stavba-je-dokoncena/">Hrubá stavba je dokončena</a></h3>
+				<div class="row__meta"><span>24. 6. 2026</span><span>Výstavba</span></div>
+				<p>Hrubá stavba včetně zastřešení je hotová. Uvnitř domu pokračují rozvody instalací a osazování oken — předání bytů plánujeme na rok 2026.</p>
+				<div class="acts"><a class="btn" href="/brave-development-ui/aktuality/hruba-stavba-je-dokoncena/">Číst článek</a></div>
+			</div>
+			<div class="row__aside"><span class="v">24. 6. 2026</span><span class="label">Publikováno</span><span class="v">Výstavba</span><span class="label">Kategorie</span></div>
+		</article></div>
+		<div class="gallery__foot"><span></span><a class="btn btn--line" href="/brave-development-ui/aktuality/">Všechny aktuality</a></div>
+	</div>
+</section>
+</main>
+<footer class="foot">
+	<div class="w">
+		<div class="foot__top">
+			<div class="foot__brand"><img src="/brave-development-ui/www/upload/f0dec1d8/logo-development.svg" alt="Bytový komplex Hálkova" width="233" height="59"><p>Kancelář developera<br>náměstí Svobody 18, 602 00 Brno</p>
+				<div class="foot__social"><a href="https://www.facebook.com" target="_blank" rel="noopener" aria-label="Facebook">Fa</a><a href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram">In</a><a href="https://www.youtube.com" target="_blank" rel="noopener" aria-label="YouTube">Yo</a></div></div>
+			<div><h4>Navigace</h4><ul><li><a href="/brave-development-ui/o-projektu/">O projektu</a></li><li><a href="/brave-development-ui/standardy/">Standardy</a></li><li><a href="/brave-development-ui/lokalita/">Lokalita</a></li><li><a href="/brave-development-ui/financovani/">Financování</a></li><li><a href="/brave-development-ui/galerie/">Galerie</a></li><li><a href="/brave-development-ui/faq/">Časté otázky</a></li><li><a href="/brave-development-ui/o-nas/">O nás</a></li><li><a href="/brave-development-ui/aktuality/">Aktuality</a></li><li><a href="/brave-development-ui/kontakty/">Kontakt</a></li></ul></div>
+			<div><h4>Nástroje</h4><ul><li><a href="/brave-development-ui/investicni-kalkulacka/">Investiční kalkulačka</a></li><li><a href="/brave-development-ui/oblibene-nemovitosti/">Oblíbené</a></li><li><a href="/brave-development-ui/porovnani-jednotek/">Porovnání</a></li></ul></div>
+			<div><h4>Kontakt</h4><ul><li><a href="tel:+420123456789">+420 123 456 789</a></li><li><a href="mailto:info@brave.cz">info@brave.cz</a></li></ul><a class="btn" href="/brave-development-ui/nabidka-nemovitosti/" style="margin-top:10px">Volné byty a ceník</a></div>
+		</div>
+		<div class="foot__bot"><a href="/brave-development-ui/zpracovani-osobnich-udaju/">Ochrana osobních údajů</a><span>Copyright © 2026 Bytový dům Hálkova | by <a href="https://www.impnet.cz/" target="_blank" rel="noopener"><img src="/brave-development-ui/www/Development/images/impnet.png" alt="IMPnet"></a></span></div>
+	</div>
+</footer>
+<div class="contactWidget"><a href="mailto:info@brave.cz"><svg viewBox="0 0 16 16"><path d="M1.5 3.5h13v9h-13zM1.5 3.5 8 9l6.5-5.5"/></svg>info@brave.cz</a><a href="tel:+420123456789"><svg viewBox="0 0 16 16"><path d="M5.5 1.5 3 2.2c-.8 5 4.2 10.6 9.8 10.8l.7-2.5-2.8-1.5-1.5 1.4C7.3 9.5 6.4 8.4 5.6 6.3l1.4-1.4z"/></svg>+420 123 456 789</a></div>
+<script type="application/json" id="v3-data">{"dispos":{"6":"4+kk","7":"1+kk","8":"2+kk","9":"3+kk"},"floorByPart":{"42":"a1","43":"a2","44":"a3","45":"a4","46":"b1","47":"b2","48":"b3","49":"b4","50":"b5","51":"b6"},"units":[{"s":"available","d":"1+kk","f":"a1","b":"A","a":32.4,"p":3082000},{"s":"available","d":"1+kk","f":"a1","b":"A","a":32.4,"p":3083000},{"s":"available","d":"2+kk","f":"a1","b":"A","a":59.7,"p":5672000},{"s":"sold","d":"2+kk","f":"a1","b":"A","a":66,"p":123456789},{"s":"available","d":"2+kk","f":"a1","b":"A","a":66,"p":6270000},{"s":"available","d":"3+kk","f":"a1","b":"A","a":59.7,"p":5672000},{"s":"available","d":"1+kk","f":"a2","b":"A","a":32.4,"p":3140000},{"s":"sold","d":"1+kk","f":"a2","b":"A","a":32.4,"p":123456789},{"s":"available","d":"2+kk","f":"a2","b":"A","a":59.7,"p":5782000},{"s":"available","d":"2+kk","f":"a2","b":"A","a":66,"p":6398000},{"s":"available","d":"2+kk","f":"a2","b":"A","a":66,"p":6398000},{"s":"available","d":"3+kk","f":"a2","b":"A","a":78.9,"p":7649000},{"s":"sold","d":"3+kk","f":"a2","b":"A","a":59.7,"p":123456789},{"s":"available","d":"1+kk","f":"a3","b":"A","a":32.4,"p":3202000},{"s":"reserved","d":"1+kk","f":"a3","b":"A","a":32.4,"p":3204000},{"s":"available","d":"2+kk","f":"a3","b":"A","a":59.7,"p":5905000},{"s":"sold","d":"2+kk","f":"a3","b":"A","a":66,"p":123456789},{"s":"reserved","d":"2+kk","f":"a3","b":"A","a":66,"p":6522000},{"s":"available","d":"3+kk","f":"a3","b":"A","a":78.9,"p":7793000},{"s":"available","d":"3+kk","f":"a3","b":"A","a":59.7,"p":5783000},{"s":"available","d":"2+kk","f":"a4","b":"A","a":48.8,"p":5311000},{"s":"available","d":"2+kk","f":"a4","b":"A","a":48.8,"p":4918000},{"s":"sold","d":"3+kk","f":"a4","b":"A","a":79.2,"p":123456789},{"s":"available","d":"3+kk","f":"a4","b":"A","a":79.2,"p":7988000},{"s":"available","d":"4+kk","f":"a4","b":"A","a":89.2,"p":9796000},{"s":"available","d":"2+kk","f":"b1","b":"B","a":66.1,"p":6280000},{"s":"reserved","d":"1+kk","f":"b1","b":"B","a":51.5,"p":4900000},{"s":"available","d":"2+kk","f":"b1","b":"B","a":54.2,"p":5149000},{"s":"available","d":"3+kk","f":"b1","b":"B","a":91.7,"p":8724000},{"s":"available","d":"1+kk","f":"b2","b":"B","a":73.2,"p":7089000},{"s":"available","d":"3+kk","f":"b2","b":"B","a":87.8,"p":8510000},{"s":"sold","d":"2+kk","f":"b2","b":"B","a":73.2,"p":123456789},{"s":"available","d":"3+kk","f":"b2","b":"B","a":91.7,"p":8881000},{"s":"reserved","d":"3+kk","f":"b2","b":"B","a":91.7,"p":8887000},{"s":"sold","d":"1+kk","f":"b3","b":"B","a":73.2,"p":123456789},{"s":"reserved","d":"3+kk","f":"b3","b":"B","a":87.8,"p":8672000},{"s":"available","d":"2+kk","f":"b3","b":"B","a":73.2,"p":7234000},{"s":"available","d":"3+kk","f":"b3","b":"B","a":91.7,"p":9068000},{"s":"available","d":"3+kk","f":"b3","b":"B","a":91.7,"p":9066000},{"s":"sold","d":"1+kk","f":"b4","b":"B","a":73.2,"p":123456789},{"s":"available","d":"3+kk","f":"b4","b":"B","a":87.8,"p":8856000},{"s":"available","d":"2+kk","f":"b4","b":"B","a":73.2,"p":7383000},{"s":"reserved","d":"3+kk","f":"b4","b":"B","a":91.7,"p":9242000},{"s":"sold","d":"3+kk","f":"b4","b":"B","a":91.7,"p":123456789},{"s":"available","d":"3+kk","f":"b5","b":"B","a":124.4,"p":12792000},{"s":"available","d":"2+kk","f":"b5","b":"B","a":109.8,"p":11283000},{"s":"sold","d":"3+kk","f":"b5","b":"B","a":91.7,"p":123456789},{"s":"available","d":"4+kk","f":"b5","b":"B","a":109.1,"p":11259000},{"s":"available","d":"3+kk","f":"b6","b":"B","a":133.5,"p":15122000},{"s":"available","d":"4+kk","f":"b6","b":"B","a":133.5,"p":15118000}]}</script>
+<script src="/brave-development-ui/v3/assets/v3.js" defer></script>
+</body>
+</html>

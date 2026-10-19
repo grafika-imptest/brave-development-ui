@@ -1,0 +1,355 @@
+/* =====================================================================
+   Brave Development — V3 homepage (lokální koncept)
+   Styl podle referencí: světle šedý podklad, bílé karty, ostré rohy,
+   černá primární tlačítka, dvousloupcové hlavičky sekcí (titulek vlevo,
+   šedý popis vpravo), bezpatkové písmo. UX a obsah původní homepage.
+   ===================================================================== */
+
+@font-face { font-family: "Material Design Icons"; font-display: block; src: url("../../www/Development/fonts/materialdesignicons-webfont.woff2?v=7.0.96") format("woff2"); }
+
+:root {
+	--bg: #f4f4f3;
+	--card: #ffffff;
+	--ink: #111111;
+	--ink-2: #2b2b2b;
+	--mute: #8b8b8b;
+	--mute-2: #a7a7a7;
+	--line: #e7e7e5;
+	--line-2: #d6d6d3;
+	--green: #42c787;
+	--green-2: #2e9a66;
+	--reserved: #c77e1b;
+	--sold: #c0392b;
+	--font: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+	--m: clamp(16px, 2.6vw, 48px);
+	--max: 1820px;
+	--gap: clamp(12px, 1.2vw, 20px);
+	--sec: clamp(72px, 8vw, 136px);
+	--nav-h: 76px;
+	--ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.v3 { font-size: 62.5%; background: var(--bg); -webkit-text-size-adjust: 100%; }
+.v3 body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--font); -webkit-font-smoothing: antialiased; overflow-x: clip; }
+:where(.v3) *, :where(.v3) *::before, :where(.v3) *::after { box-sizing: border-box; }
+:where(.v3) img { display: block; max-width: 100%; height: auto; }
+:where(.v3) a { color: inherit; text-decoration: none; }
+:where(.v3) :is(h1, h2, h3, h4, p, ul, figure, dl, dd) { margin: 0; }
+:where(.v3) ul { padding: 0; list-style: none; }
+:where(.v3) button, :where(.v3) select { font: inherit; color: inherit; }
+.v3 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.v3 .mdi::before { font-family: "Material Design Icons"; font-style: normal; line-height: 1; display: inline-block; }
+.v3 .mdi-cursor-move::before { content: "\F01BE"; }
+.v3 .uk-hidden, .v3 [hidden] { display: none !important; }
+
+.w { width: 100%; max-width: calc(var(--max) + 2 * var(--m)); margin: 0 auto; padding: 0 var(--m); }
+.skip { position: absolute; left: 12px; top: -60px; z-index: 2000; background: var(--ink); color: #fff; padding: 10px 14px; }
+.skip:focus { top: 12px; }
+
+/* --- Typografie ---------------------------------------------------------- */
+.h1 { font: 500 clamp(44px, 5.4vw, 80px)/1.04 var(--font); letter-spacing: -0.035em; }
+.h2 { font: 500 clamp(32px, 3.4vw, 50px)/1.1 var(--font); letter-spacing: -0.03em; }
+.h3 { font: 500 clamp(22px, 1.8vw, 28px)/1.15 var(--font); letter-spacing: -0.02em; }
+.lead { font-size: 14px; line-height: 1.6; color: var(--mute); max-width: 36ch; }
+.label { font-size: 12px; line-height: 1.3; color: var(--mute); }
+.eyebrow { font: 500 12px/1 var(--font); letter-spacing: 0.02em; color: var(--mute); }
+
+/* Dvousloupcová hlavička sekce (titulek / šedý popis) */
+.head { display: grid; grid-template-columns: 1fr minmax(240px, 36ch); gap: 24px 48px; align-items: start; margin-bottom: clamp(32px, 4vw, 56px); }
+.head .lead { padding-top: 0.5em; }
+@media (max-width: 767px) { .head { grid-template-columns: 1fr; } .head .lead { padding-top: 0; } }
+
+/* --- Tlačítka ------------------------------------------------------------- */
+.btn {
+	display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+	height: 40px; padding: 0 18px; border: 1px solid var(--ink); border-radius: 0;
+	background: var(--ink); color: #fff; font: 500 13px/1 var(--font); letter-spacing: 0; cursor: pointer;
+	transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+	white-space: nowrap;
+}
+.btn:hover { background: #333; border-color: #333; }
+.btn--line { background: var(--card); color: var(--ink); border-color: var(--line-2); }
+.btn--line:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.btn--ghost { background: transparent; color: var(--ink); border-color: transparent; padding: 0 4px; }
+.btn--ghost:hover { background: transparent; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+.btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+
+/* --- Hlavička webu ---------------------------------------------------------- */
+.nav { position: fixed; inset: 0 0 auto; z-index: 900; height: var(--nav-h); background: rgb(244 244 243 / 0.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: transform 0.45s var(--ease), box-shadow 0.3s; }
+html.is-scrolled .nav { box-shadow: 0 1px 0 var(--line); }
+html.is-nav-hidden .nav { transform: translateY(-100%); }
+.nav__in { height: 100%; display: flex; align-items: center; gap: clamp(16px, 2.6vw, 44px); }
+.nav__logo { flex: none; width: clamp(104px, 8vw, 128px); }
+.nav__links { display: flex; align-items: center; gap: clamp(14px, 1.6vw, 28px); }
+.nav__links a { font-size: 13px; color: var(--ink-2); padding: 6px 0; border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+.nav__links a:hover { border-bottom-color: var(--ink); }
+.nav__right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.nav__icon { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid transparent; transition: border-color 0.2s; }
+.nav__icon:hover { border-color: var(--line-2); }
+.nav__icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.nav__icon .n { position: absolute; top: 4px; right: 3px; min-width: 15px; height: 15px; padding: 0 3px; background: var(--ink); color: #fff; font: 600 9px/15px var(--font); text-align: center; }
+.nav__lang { position: relative; }
+.nav__lang > button { height: 40px; padding: 0 10px; border: 1px solid transparent; background: none; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.nav__lang > button:hover { border-color: var(--line-2); }
+.nav__lang ul { position: absolute; right: 0; top: calc(100% + 6px); background: var(--card); border: 1px solid var(--line); min-width: 120px; padding: 4px; display: none; }
+.nav__lang.is-open ul { display: block; }
+.nav__lang li a { display: flex; justify-content: space-between; padding: 9px 12px; font-size: 13px; }
+.nav__lang li a:hover, .nav__lang li a[aria-current] { background: var(--bg); }
+.nav__cta { margin-left: 8px; }
+.nav__burger { display: none; width: 40px; height: 40px; border: 1px solid var(--line-2); background: var(--card); cursor: pointer; place-items: center; }
+.nav__burger i { display: block; width: 16px; height: 1px; background: currentColor; box-shadow: 0 -5px 0 currentColor, 0 5px 0 currentColor; }
+@media (max-width: 1239px) { .nav__links { display: none; } .nav__burger { display: grid; } }
+@media (max-width: 559px) { .nav__cta, .nav__icon, .nav__lang { display: none; } }
+
+/* Mobilní menu */
+.drawer { position: fixed; inset: var(--nav-h) 0 0; z-index: 890; background: var(--bg); padding: 24px var(--m) 40px; overflow-y: auto; transform: translateY(-8px); opacity: 0; visibility: hidden; transition: opacity 0.25s, transform 0.35s var(--ease), visibility 0s 0.35s; }
+html.is-menu .drawer { opacity: 1; transform: none; visibility: visible; transition: opacity 0.25s, transform 0.35s var(--ease); }
+.drawer li a { display: flex; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 20px; letter-spacing: -0.01em; }
+.drawer__tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
+
+/* --- Hero ----------------------------------------------------------------- */
+.hero { position: relative; }
+.hero__pano section.panoramaHero { border-radius: 0; max-height: none; }
+.hero__pano section.panoramaHero .panoramaHero__copy { display: none; }
+.hero__pano section.panoramaHero .panoramaHero__hint { display: none; }
+.hero__pano section.panoramaHero .panoramaHero__controls { border-radius: 0; }
+.hero__pano section.panoramaHero .panoramaHero__controls button { border-radius: 0; }
+.hero__eyebrow { margin-bottom: 16px; }
+.hero__h1 { max-width: 18ch; }
+.hero__lead { margin-top: 18px; }
+.hero__cta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 26px; }
+.btn--white { background: #fff; color: var(--ink); border-color: #fff; }
+.btn--white:hover { background: var(--bg); border-color: var(--bg); }
+.btn--glass { background: rgb(255 255 255 / 0.12); color: #fff; border-color: rgb(255 255 255 / 0.45); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.btn--glass:hover { background: #fff; color: var(--ink); border-color: #fff; }
+
+/* Desktop: panoráma přes celou první obrazovku, text + vyhledávač přes něj */
+@media (min-width: 1024px) {
+	.hero { height: 100vh; height: 100svh; min-height: 680px; }
+	.hero__pano, .hero__pano section.panoramaHero { position: absolute; inset: 0; height: 100%; min-height: 0; }
+	.hero__pano section.panoramaHero .panoramaHero__shade { background: linear-gradient(90deg, rgb(0 0 0 / 0.62) 0%, rgb(0 0 0 / 0.28) 34%, transparent 58%), linear-gradient(0deg, rgb(0 0 0 / 0.45) 0%, transparent 38%); }
+	.hero__pano section.panoramaHero .panoramaHero__controls { right: var(--m); top: calc(var(--nav-h) + 20px); bottom: auto; }
+	.hero__over { position: absolute; inset: var(--nav-h) 0 0; z-index: 70; pointer-events: none; display: flex; }
+	.hero__in { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding-top: clamp(28px, 5vh, 72px); padding-bottom: clamp(20px, 3.5vh, 40px); }
+	.hero__in > * { pointer-events: auto; }
+	.hero__copy { max-width: 760px; color: #fff; }
+	.hero__lead { max-width: 52ch; }
+	.hero__copy .eyebrow, .hero__copy .lead { color: rgb(255 255 255 / 0.78); }
+	.hero__h1 { font-size: clamp(44px, 4.4vw, 76px); }
+	.hero__srch { width: 100%; }
+	.hero__srch .tabs button:not([aria-selected="true"]) { background: rgb(255 255 255 / 0.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: var(--ink); }
+}
+@media (min-width: 1024px) and (max-height: 820px) { .hero__lead { display: none; } .hero__eyebrow { margin-bottom: 12px; } .hero__cta { margin-top: 20px; } }
+
+/* Tablet a mobil: text, panoráma a vyhledávač pod sebou */
+@media (max-width: 1023px) {
+	.hero { padding-top: calc(var(--nav-h) + clamp(28px, 5vw, 56px)); display: flex; flex-direction: column; }
+	.hero__pano { order: 2; margin-top: 28px; }
+	.hero__pano section.panoramaHero { height: 62svh; min-height: 380px; }
+	.hero__over { display: contents; }
+	.hero__in { display: contents; }
+	.hero__copy { order: 1; width: 100%; max-width: calc(var(--max) + 2 * var(--m)); margin: 0 auto; padding: 0 var(--m); }
+	.hero__srch { order: 3; width: 100%; padding: 28px var(--m) 0; }
+	.btn--white { background: var(--ink); color: #fff; border-color: var(--ink); }
+	.btn--glass { background: var(--card); color: var(--ink); border-color: var(--line-2); backdrop-filter: none; }
+}
+
+/* --- Vyhledávání (rychlé vyhledávání šablony) ----------------------------- */
+.tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: none; height: 44px; padding: 0 clamp(18px, 2.4vw, 40px); border: 0; background: #ebebea; color: var(--mute); cursor: pointer; font-size: 14px; transition: background-color 0.2s, color 0.2s; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--card); color: var(--ink); font-weight: 500; }
+.filter { background: var(--card); padding: clamp(16px, 2vw, 28px); }
+.filter__row { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
+.field { position: relative; }
+.field label { position: absolute; left: -9999px; }
+.field select { width: 100%; height: 46px; padding: 0 40px 0 14px; border: 1px solid var(--line-2); border-radius: 0; background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23111' stroke-width='1.3'/%3E%3C/svg%3E") no-repeat right 14px center; appearance: none; font-size: 14px; cursor: pointer; transition: border-color 0.2s; }
+.field select:hover, .field select:focus { border-color: var(--ink); outline: none; }
+.filter__foot { display: flex; align-items: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.filter__foot .sp { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.filter__count { font-size: 13px; color: var(--mute); }
+@media (max-width: 899px) { .filter__row { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 479px) { .filter__row { grid-template-columns: 1fr; } .filter__foot .sp { margin-left: 0; width: 100%; } .filter__foot .sp .btn { flex: 1; } }
+
+/* --- Karty (dispozice, novinky) ------------------------------------------- */
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
+@media (max-width: 1099px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 559px) { .cards { grid-template-columns: 1fr; } }
+.card { display: flex; flex-direction: column; background: var(--card); transition: box-shadow 0.25s; }
+.card:hover { box-shadow: 0 18px 40px -24px rgb(0 0 0 / 0.35); }
+.card__img { position: relative; overflow: hidden; aspect-ratio: 11 / 10; background: #e9e9e7; }
+.card__img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
+.card:hover .card__img img { transform: scale(1.04); }
+.card__badge { position: absolute; left: 12px; top: 12px; background: var(--green); color: var(--ink); padding: 6px 9px; font: 500 11px/1 var(--font); display: inline-flex; align-items: center; gap: 6px; }
+.card__body { padding: 16px 16px 18px; display: grid; gap: 4px; }
+.card__top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.card__title { font: 500 16px/1.3 var(--font); letter-spacing: -0.01em; }
+.card__price { font: 500 16px/1.3 var(--font); white-space: nowrap; }
+.card__sub { font-size: 12px; color: var(--mute); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-2); }
+.meta span { display: inline-flex; align-items: center; gap: 6px; }
+.meta svg { width: 14px; height: 14px; fill: none; stroke: var(--mute); stroke-width: 1.4; }
+.card__bld { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 12px; }
+.card__bld dt { color: var(--mute); }
+.card__bld dd { text-align: right; color: var(--ink-2); }
+
+/* --- Statistiky s mini grafy (styl „investičních“ karet) ------------------ */
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); margin-bottom: var(--gap); }
+.kpi { background: var(--card); padding: 18px 18px 16px; display: flex; flex-direction: column; min-height: 168px; }
+.kpi .label { margin-bottom: 10px; }
+.kpi__val { font: 500 clamp(26px, 2.4vw, 34px)/1 var(--font); letter-spacing: -0.03em; }
+.kpi__val small { font-size: 0.5em; color: var(--mute); letter-spacing: 0; margin-left: 4px; }
+.bars { display: flex; align-items: flex-end; gap: 6px; height: 56px; margin-top: auto; padding-top: 18px; }
+.bars i { position: relative; flex: 1; background: #ececea; min-height: 3px; }
+.bars i::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--ink); }
+.bars i[data-t]:hover { background: #dcdcd9; }
+.bars i[data-t]:hover::after { content: attr(data-t); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); white-space: nowrap; background: var(--ink); color: #fff; font-size: 11px; padding: 4px 6px; }
+@media (max-width: 899px) { .kpis { grid-template-columns: 1fr; } .kpi { min-height: 0; } }
+
+/* --- Interaktivní dům (vizualizace s podlažími) --------------------------- */
+.house { position: relative; background: var(--card); }
+.house img { width: 100%; height: auto; }
+.house svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.band { fill: rgb(17 17 17 / 0); stroke: rgb(255 255 255 / 0); stroke-width: 2; transition: fill 0.2s, stroke 0.2s; cursor: pointer; outline: none; }
+.band:hover, .band:focus-visible { fill: rgb(66 199 135 / 0.42); stroke: #fff; }
+.band.is-sold:hover { fill: rgb(192 57 43 / 0.32); }
+.house__tip { position: absolute; z-index: 3; pointer-events: none; background: var(--card); padding: 12px 14px; min-width: 190px; box-shadow: 0 16px 36px -18px rgb(0 0 0 / 0.5); opacity: 0; transform: translate(-50%, calc(-100% - 10px)); transition: opacity 0.15s; }
+.house__tip.on { opacity: 1; }
+.house__tip b { display: block; font-weight: 500; font-size: 15px; margin-bottom: 6px; }
+.house__tip span { display: flex; justify-content: space-between; gap: 16px; font-size: 12px; color: var(--mute); }
+.house__tip strong { color: var(--ink); font-weight: 500; }
+.house__bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; background: var(--card); padding: 14px 16px; border-top: 1px solid var(--line); }
+.floors { display: flex; gap: 6px; flex-wrap: wrap; }
+.floors a { height: 32px; padding: 0 10px; border: 1px solid var(--line-2); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; transition: border-color 0.2s, background-color 0.2s, color 0.2s; }
+.floors a:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+.floors a i { font-style: normal; color: var(--mute); }
+.floors a:hover i { color: #aaa; }
+.house .tag { position: absolute; left: 16px; top: 16px; z-index: 2; background: var(--card); padding: 7px 10px; font: 500 11px/1 var(--font); }
+@media (max-width: 767px) { .floors { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; } }
+
+/* --- Lokalita: karta s textem + mapa --------------------------------------- */
+.split { display: grid; grid-template-columns: minmax(300px, 4fr) 8fr; gap: var(--gap); align-items: stretch; }
+.panel { background: var(--card); padding: clamp(20px, 2.4vw, 32px); display: flex; flex-direction: column; gap: 16px; }
+.panel .h3 { max-width: 14ch; }
+.panel p { font-size: 13px; color: var(--ink-2); }
+.checks { display: grid; gap: 0; margin-top: 4px; border-top: 1px solid var(--line); }
+.checks li { display: flex; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.checks li .mdi { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--green); color: #fff; font-size: 18px; box-shadow: 0 0 0 3px #fff, 0 0 0 4px rgb(66 199 135 / 0.35); }
+.panel .btn { align-self: flex-start; margin-top: auto; }
+.mapBox { position: relative; min-height: 520px; background: #e9e9e7; overflow: hidden; }
+.mapBox > div { position: absolute !important; inset: 0; width: 100% !important; height: 100% !important; }
+.mapBox .leaflet-tile-pane { filter: grayscale(1) contrast(0.95) brightness(1.04); }
+.mapBox .leaflet-popup-content-wrapper, .mapBox .leaflet-popup-tip { border-radius: 0; box-shadow: 0 12px 30px -14px rgb(0 0 0 / 0.4); }
+.mapBox .leaflet-bar, .mapBox .leaflet-bar a { border-radius: 0 !important; }
+.mapBox .addressCard .logo img { width: 110px; margin-bottom: 8px; }
+.mapBox .addressCard p { margin: 0 0 6px; font: 400 13px/1.4 var(--font); }
+.mapBox .addressCard a { font: 500 12px/1 var(--font); text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 899px) { .split { grid-template-columns: 1fr; } .mapBox { min-height: 380px; } }
+
+/* --- Galerie ----------------------------------------------------------------- */
+.gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
+.gallery button { position: relative; display: block; padding: 0; border: 0; background: #e9e9e7; cursor: zoom-in; overflow: hidden; aspect-ratio: 3 / 2; }
+/* mřížka 3 × 2 bez zvětšené první fotky — šest vizualizací beze zbytku */
+.gallery img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
+.gallery button:hover img { transform: scale(1.04); }
+.gallery__foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 18px; }
+@media (max-width: 767px) { .gallery { grid-template-columns: 1fr 1fr; } }
+
+/* --- Aktuality: řádkové karty ------------------------------------------------ */
+.rows { display: grid; gap: var(--gap); }
+.row { display: grid; grid-template-columns: minmax(220px, 300px) 1fr auto; background: var(--card); transition: box-shadow 0.25s; }
+.row:hover { box-shadow: 0 18px 40px -26px rgb(0 0 0 / 0.35); }
+.row__img { overflow: hidden; background: #e9e9e7; }
+.row__img img { width: 100%; height: 100%; min-height: 180px; object-fit: cover; transition: transform 0.8s var(--ease); }
+.row:hover .row__img img { transform: scale(1.04); }
+.row__body { padding: 20px clamp(16px, 2vw, 28px); display: flex; flex-direction: column; gap: 8px; }
+.row__body h3 { font: 500 18px/1.25 var(--font); letter-spacing: -0.01em; }
+.row__meta { display: flex; gap: 14px; font-size: 12px; color: var(--mute); }
+.row__body p { font-size: 13px; color: var(--ink-2); max-width: 60ch; }
+.row__body .acts { display: flex; gap: 6px; margin-top: auto; padding-top: 8px; }
+.row__aside { padding: 20px clamp(16px, 2vw, 28px); display: grid; align-content: start; gap: 2px; min-width: 150px; border-left: 1px solid var(--line); }
+.row__aside .v { font: 500 26px/1.1 var(--font); letter-spacing: -0.03em; }
+.row__aside .label { margin-bottom: 14px; }
+@media (max-width: 899px) { .row { grid-template-columns: 1fr; } .row__aside { display: none; } .row__img img { min-height: 0; aspect-ratio: 16 / 9; } }
+
+/* --- Patička ----------------------------------------------------------------- */
+.foot { margin-top: var(--sec); background: var(--card); padding: clamp(48px, 5vw, 80px) 0 24px; font-size: 13px; }
+.foot__top { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 32px; }
+.foot__brand img { width: 128px; margin-bottom: 18px; }
+.foot__brand p { color: var(--mute); }
+.foot h4 { font: 500 12px/1 var(--font); color: var(--mute); margin: 0 0 16px; }
+.foot li { margin-bottom: 9px; }
+.foot a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.foot__social { display: flex; gap: 6px; margin-top: 18px; }
+.foot__social a { width: 36px; height: 36px; border: 1px solid var(--line-2); display: grid; place-items: center; font-size: 11px; }
+.foot__social a:hover { background: var(--ink); color: #fff; text-decoration: none; }
+.foot__bot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--mute); font-size: 12px; }
+.foot__bot img { display: inline-block; height: 16px; width: auto; vertical-align: middle; margin-left: 4px; }
+@media (max-width: 899px) { .foot__top { grid-template-columns: 1fr 1fr; } .foot__brand { grid-column: 1 / -1; } }
+
+/* Plovoucí kontakt (šablona) */
+.contactWidget { position: fixed; right: 0; bottom: 18vh; z-index: 800; display: grid; gap: 1px; }
+.contactWidget a { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; background: var(--ink); color: #fff; font-size: 13px; transform: translateX(calc(100% - 44px)); transition: transform 0.35s var(--ease); }
+.contactWidget a:hover, .contactWidget a:focus-visible { transform: none; }
+.contactWidget svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+@media (max-width: 1239px) { .contactWidget { display: none; } }
+
+/* Lightbox */
+.lb { position: fixed; inset: 0; z-index: 1100; background: rgb(244 244 243 / 0.98); display: grid; grid-template-rows: auto 1fr auto; opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0s 0.25s; }
+.lb.on { opacity: 1; visibility: visible; transition: opacity 0.25s; }
+.lb__bar { display: flex; justify-content: space-between; align-items: center; padding: 14px var(--m); font-size: 13px; }
+.lb__stage { display: grid; place-items: center; padding: 0 var(--m); min-height: 0; }
+.lb__stage img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.sq { width: 40px; height: 40px; border: 1px solid var(--line-2); background: var(--card); cursor: pointer; display: grid; place-items: center; font-size: 16px; }
+.sq:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* Statický náhled (shim) ve stylu V3 */
+.v3 .staticToast { border-radius: 0 !important; font-family: var(--font) !important; }
+.v3 .refineSwitch { font-family: var(--font); }
+
+/* Jemné odhalení při scrollu */
+.js [data-r] { opacity: 0; transform: translateY(16px); transition: opacity 0.7s var(--ease), transform 0.8s var(--ease); }
+.js [data-r].in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .js [data-r] { opacity: 1; transform: none; transition: none; } .v3 * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
+
+.sec { padding-top: var(--sec); }
+
+/* Štítek projektu v panoramatu (styl karty šablony se načítal z bundlu) */
+.hero__pano section.panoramaHero .panoramaComplexTip { background: var(--card); color: var(--ink); border-radius: 0; box-shadow: 0 16px 36px -18px rgb(0 0 0 / 0.45); }
+.hero__pano section.panoramaHero .panoramaComplexTip .homehover-content h2 { font: 500 16px/1.2 var(--font); color: var(--ink); margin: 0 0 4px; }
+.hero__pano section.panoramaHero .panoramaComplexTip .homehover-content p { font: 400 12px/1.4 var(--font); color: var(--mute); }
+.hero__pano section.panoramaHero .panoramaPoiTooltip { border-radius: 0; font-family: var(--font); }
+
+/* Mobil: štítek domu v panoramatu by přetékal okraj */
+@media (max-width: 640px) { .hero__pano section.panoramaHero .panoramaComplexTip { display: none !important; } }
+
+/* Ikony pinů v panoramatu (Material Design Icons ze šablony — jen glyfy, které panoráma používá) */
+@font-face { font-family: "Material Design Icons"; src: url(../../www/Development/fonts/materialdesignicons-webfont.woff2?v=7.0.96) format("woff2"), url(../../www/Development/fonts/materialdesignicons-webfont.woff?v=7.0.96) format("woff"); font-weight: 400; font-style: normal; font-display: block; }
+.v3 .mdi-home-city-outline::before { content: "\F0D16"; }
+.v3 .mdi-bus-stop::before { content: "\F1012"; }
+.v3 .mdi-school-outline::before { content: "\F1180"; }
+.v3 .mdi-teddy-bear::before { content: "\F18FB"; }
+.v3 .mdi-store-outline::before { content: "\F1361"; }
+.v3 .mdi-silverware-fork-knife::before { content: "\F0A70"; }
+.v3 .mdi-tree-outline::before { content: "\F0E69"; }
+
+/* Nápověda 360°: prst, který táhne do stran */
+.panoHint { position: absolute; left: 50%; top: 50%; z-index: 65; display: flex; flex-direction: column; align-items: center; gap: 10px; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity 0.6s var(--ease); }
+.panoHint.is-on { opacity: 1; }
+.panoHint.is-off { opacity: 0; transition-duration: 0.35s; }
+.panoHint__hand { width: 72px; height: 72px; display: grid; place-items: center; border-radius: 50%; background: rgb(255 255 255 / 0.18); border: 1px solid rgb(255 255 255 / 0.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: panoSwipe 2.8s var(--ease) infinite; }
+.panoHint__hand svg { width: 36px; height: 36px; fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.35)); }
+.panoHint__txt { background: rgb(17 17 17 / 0.72); color: #fff; font: 500 12px/1 var(--font); padding: 9px 12px; white-space: nowrap; }
+@keyframes panoSwipe { 0%, 100% { transform: translateX(-34px) rotate(-8deg); } 50% { transform: translateX(34px) rotate(8deg); } }
+@media (min-width: 1024px) { .panoHint { left: 74%; top: 25%; } }
+@media (prefers-reduced-motion: reduce) { .panoHint__hand { animation: none; } }
+@media (max-width: 1023px) { .panoHint { top: 40%; } }
+
+.v3 .mdi-basketball::before { content: "\F0806"; }
+.v3 .mdi-map-marker-outline::before { content: "\F07D9"; }
+
+/* Karta adresy projektu přímo nad pinem „B“ (šablona ji posouvá o 13rem doleva) */
+.v3 .mapBox .leaflet-popup:has(.addressCard) { margin-left: 13rem; }
+.v3 .mapBox .leaflet-popup:has(.addressCard) { opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0s 0.2s; }
+.v3 .mapBox.is-addr .leaflet-popup:has(.addressCard) { opacity: 1; visibility: visible; transition: opacity 0.2s; }

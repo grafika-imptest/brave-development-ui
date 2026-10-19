@@ -52,3 +52,13 @@ node tools/check.mjs        # přetečení, konzole, obrázky, chování hlavič
 node tools/header-fit.mjs   # vejde se hlavička na 1200–1920 px?
 ```
 
+
+## Upravená V2 (nová homepage, `/v3/`)
+
+Nový návrh úvodní stránky — přepínač náhledu: Původní / Upravená / Upravená V2 (`?v2`).
+Podstránky se ve V2 zobrazují v Upravené verzi, homepage přesměruje na `/v3/`.
+
+- data: `v3/data.json` (snapshot obsahu šablony), styly `v3/src/v3.css`, chování `v3/src/v3.js`
+- build: `node tools/build-v3.mjs` (po `tools/build.mjs`; potřebuje `mirror/`) → `docs/v3/`
+  - vlastní kopie `panorama360.js` (zpřístupní prohlížeč kvůli samorotaci), piny mapy z `@mdi/js` + „B“ z loga
+- test: `node tools/v3-check.mjs` (běžící `tools/serve.mjs 5320`)
