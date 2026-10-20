@@ -675,3 +675,36 @@ html.rf-on .rfLead__card {
 		width: 42%;
 	}
 }
+
+/* Formulář s makléřkou: výšku určuje obsah, ne poměr stran fotky na pozadí
+   (šablona: výška = fotka 869 px + 2× 64 px, formulář absolutně se 130 px nad sebou) */
+html.rf-on section.form.rfLead {
+	height: auto;
+	min-height: 0;
+	max-height: none;
+	padding: clamp(48px, 5vw, 80px) 0;
+	overflow: hidden;
+}
+html.rf-on section.form.rfLead > picture,
+html.rf-on section.form.rfLead > picture img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+html.rf-on section.form.rfLead > picture {
+	z-index: 0;
+}
+html.rf-on section.form.rfLead .container {
+	position: relative;
+	z-index: 2;
+	inset: auto;
+	transform: none;
+}
+html.rf-on section.form.rfLead .container > .content {
+	padding-top: 0;
+}
+html.rf-on section.form.rfLead .container > .content > div {
+	align-items: center;
+}
