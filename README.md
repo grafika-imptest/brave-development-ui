@@ -62,3 +62,19 @@ Podstránky se ve V2 zobrazují v Upravené verzi, homepage přesměruje na `/v3
 - build: `node tools/build-v3.mjs` (po `tools/build.mjs`; potřebuje `mirror/`) → `docs/v3/`
   - vlastní kopie `panorama360.js` (zpřístupní prohlížeč kvůli samorotaci), piny mapy z `@mdi/js` + „B“ z loga
 - test: `node tools/v3-check.mjs` (běžící `tools/serve.mjs 5320`)
+
+## Úpravy podle auditu (Upravená verze)
+
+Podklad: produktový audit dema (Claude Docs, 28. 9. 2026). „Upravená V2“ je v přepínači skrytá
+(`SHOW_V3` v `tools/static-shim.js`), stránka `/v3/` zůstává na přímé adrese.
+
+- `refine/src/85-audit.css` + sekce 3–4 v `refine/src/brave-refine.js`: mobilní hero (perex, vyhledávání),
+  sticky mobilní lišta, CTA a telefon v menu, nápověda a pulzující obrys u vizualizace domu, stav bytů textem,
+  max. 4 podobné byty, kratší náběhové animace, kontakt vpravo, video v hero, výběr budovy ve vyhledávání,
+  panoráma v sekci Lokalita, formulář s makléřkou nad patičkou.
+- Kontrast WCAG AA: `node tools/contrast-css.mjs` generuje `refine/src/86-contrast.css` z CSS šablony;
+  ověření `node tools/contrast-scan.mjs`.
+- Body zájmu v panoramatu: `tools/panorama-pois.mjs` (volá build) doplní body z mapy lokality
+  (polohy v panoramatu jsou orientační) a ke všem bodům s GPS vzdálenost od projektu.
+- Video v hero: `refine/media/` (záběry z Magnificu, střih přes `ffmpeg-static`); při výměně zvýšit `MEDIA_V`.
+- Rychlý build bez mazání `docs/`: `node tools/build.mjs --refine-only`.

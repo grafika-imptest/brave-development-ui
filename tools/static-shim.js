@@ -13,12 +13,16 @@
 	var qs = location.search;
 	if (/[?&]puvodni\b/.test(qs)) store.set('brave-refine', 'off');
 	if (/[?&]upravene\b/.test(qs)) store.set('brave-refine', 'on');
-	if (/[?&]v2\b/.test(qs)) store.set('brave-refine', 'v3');
+	// „Upravená V2“ (/v3/) je v přepínači skrytá — stránka zůstává jen na přímé adrese.
+	// Zpět ji zapne SHOW_V3 = true (přesměrování homepage + tlačítko).
+	var SHOW_V3 = false;
 	var path = location.pathname, onV3 = path.indexOf(B + '/v3/') === 0;
-	if (onV3) store.set('brave-refine', 'v3');
-	var mode = store.get('brave-refine') || 'on';
+	if (SHOW_V3 && /[?&]v2\b/.test(qs)) store.set('brave-refine', 'v3');
+	if (SHOW_V3 && onV3) store.set('brave-refine', 'v3');
+	var mode = onV3 ? 'v3' : store.get('brave-refine') || 'on';
+	if (mode === 'v3' && !SHOW_V3 && !onV3) mode = 'on';
 	// homepage v režimu „Upravená V2“ → nový návrh pod /v3/ (podstránky zůstávají upravené)
-	if (mode === 'v3' && (path === B + '/' || path === B + '/index.html')) { location.replace(B + '/v3/'); return; }
+	if (SHOW_V3 && mode === 'v3' && (path === B + '/' || path === B + '/index.html')) { location.replace(B + '/v3/'); return; }
 	var off = mode === 'off';
 	window.__BRAVE_REFINE_OFF = off;
 	var html = document.documentElement;
@@ -149,7 +153,7 @@
 			return '<button type="button" data-v="' + v + '" aria-pressed="' + on + '" aria-describedby="rs-tip-' + v + '">' + label +
 				'<span class="refineSwitch__tip" role="tooltip" id="rs-tip-' + v + '"><b>' + tips[v][0] + '</b>' + tips[v][1] + '</span></button>';
 		}
-		s.innerHTML = btn('off', 'Původní', off) + btn('on', 'Upravená', mode === 'on') + btn('v3', 'Upravená V2', mode === 'v3');
+		s.innerHTML = btn('off', 'Původní', off) + btn('on', 'Upravená', mode === 'on') + (SHOW_V3 || onV3 ? btn('v3', 'Upravená V2', mode === 'v3') : '');
 		s.addEventListener('click', function (e) {
 			var b = e.target.closest('button');
 			if (!b || b.getAttribute('aria-pressed') === 'true') return;

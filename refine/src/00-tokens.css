@@ -22,7 +22,10 @@
 	--rf-green-soft: #e9f6f0;
 	--rf-ink: #000;
 	--rf-ink-2: #3c3c3b;
-	--rf-muted: #7a7a7a;
+	--rf-muted: #666; /* audit: #7a7a7a měla na bílé jen 4,29:1 */
+	/* Kontrast WCAG AA (audit): zelená jako text a text na zelené */
+	--rf-green-ink: #1d7a4f; /* zelený text na bílé 5,3:1, na světle zelené 4,8:1 */
+	--rf-on-green: #0b2016; /* text na značkové zelené ploše — 8,8:1 */
 	--rf-line: rgb(0 0 0 / 0.08);
 	--rf-line-strong: rgb(0 0 0 / 0.14);
 	--rf-surface: #fff;

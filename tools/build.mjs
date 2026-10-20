@@ -9,6 +9,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { addPanoramaPois } from './panorama-pois.mjs';
 import { createRewriter } from './lib-rewrite.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -36,6 +37,15 @@ function injectHtml(html) {
 	return html;
 }
 
+// Média vrstvy úprav (video v hero apod.)
+async function copyMedia() {
+	const src = path.join(ROOT, 'refine', 'media');
+	const list = await fs.readdir(src).catch(() => []);
+	if (!list.length) return;
+	await fs.mkdir(path.join(OUT, 'refine', 'media'), { recursive: true });
+	for (const f of list) await fs.copyFile(path.join(src, f), path.join(OUT, 'refine', 'media', f));
+}
+
 // Vrstva úprav: refine/src/*.css (seřazeno podle čísla) → refine/brave-refine.css
 const SRC = path.join(ROOT, 'refine', 'src');
 const parts = (await fs.readdir(SRC)).filter(f => f.endsWith('.css')).sort();
@@ -47,6 +57,8 @@ if (process.argv.includes('--refine-only')) {
 	await fs.mkdir(path.join(OUT, 'refine'), { recursive: true });
 	await fs.copyFile(path.join(ROOT, 'refine', 'brave-refine.css'), path.join(OUT, 'refine', 'brave-refine.css'));
 	await fs.copyFile(path.join(ROOT, 'refine', 'brave-refine.js'), path.join(OUT, 'refine', 'brave-refine.js'));
+	await copyMedia();
+	console.log('panoráma: +' + await addPanoramaPois(OUT) + ' bodů zájmu');
 	console.log(`refine: ${parts.length} CSS částí (${(css.length / 1024).toFixed(1)} kB)`);
 	process.exit(0);
 }
@@ -99,9 +111,11 @@ await fs.writeFile(path.join(OUT, '_data', 'noop.json'), '{}');
 await fs.mkdir(path.join(OUT, 'refine'), { recursive: true });
 await fs.copyFile(path.join(ROOT, 'refine', 'brave-refine.css'), path.join(OUT, 'refine', 'brave-refine.css'));
 await fs.copyFile(path.join(ROOT, 'refine', 'brave-refine.js'), path.join(OUT, 'refine', 'brave-refine.js'));
+await copyMedia();
 await fs.writeFile(path.join(OUT, '.nojekyll'), '');
 await fs.writeFile(path.join(OUT, '404.html'),
 	`<!doctype html><meta charset="utf-8"><title>Stránka nenalezena</title><meta name="robots" content="noindex"><p style="font-family:sans-serif;padding:40px">Tato stránka není ve statickém náhledu. <a href="${BASE}/">Zpět na úvod</a></p>`);
+console.log('panoráma: +' + await addPanoramaPois(OUT) + ' bodů zájmu');
 console.log(`docs/: ${nPages} stránek, ${nAssets} souborů, ${nData} datových JSON, BASE=${BASE}`);
 
 // Volitelný lokální koncept V2 (není v repozitáři) — když existuje, složit ho znovu.
