@@ -23,7 +23,10 @@
 	--rf-green-soft: #e9f6f0;
 	--rf-ink: #000;
 	--rf-ink-2: #3c3c3b;
-	--rf-muted: #7a7a7a;
+	--rf-muted: #666; /* audit: #7a7a7a měla na bílé jen 4,29:1 */
+	/* Kontrast WCAG AA (audit): zelená jako text a text na zelené */
+	--rf-green-ink: #1d7a4f; /* zelený text na bílé 5,3:1, na světle zelené 4,8:1 */
+	--rf-on-green: #0b2016; /* text na značkové zelené ploše — 8,8:1 */
 	--rf-line: rgb(0 0 0 / 0.08);
 	--rf-line-strong: rgb(0 0 0 / 0.14);
 	--rf-surface: #fff;
@@ -2588,6 +2591,2009 @@ section.investmentCalculator .container .content .calculatePanel .uk-grid > div 
 		margin-left: 0;
 		max-width: 68rem;
 	}
+}
+
+/* ---- 85-audit.css ---- */
+/* ==========================================================================
+   Úpravy podle produktového auditu (Demo Brave Development, 28. 9. 2026)
+   Jen prezentace nad šablonou; doplněné prvky (mobilní lišta, odkazy v menu,
+   nápověda u vizualizace, popisky stavu) vkládá brave-refine.js.
+   ========================================================================== */
+
+/* --- Hero s panoramatem ----------------------------------------------------- */
+
+/* Text přes panoráma: piny a jejich čáry nesmí ležet přes H1 a CTA (audit: Design) */
+html.rf-on section.panoramaHero .panoramaHero__copy {
+	z-index: 40;
+	pointer-events: none;
+}
+html.rf-on section.panoramaHero .panoramaHero__copy :is(a, button, select, input) {
+	pointer-events: auto;
+}
+html.rf-on section.panoramaHero .panoramaHero__copy::before {
+	content: "";
+	position: absolute;
+	inset: 0 auto 0 0;
+	width: min(760px, 70%);
+	z-index: -1;
+	background: linear-gradient(90deg, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.22) 60%, transparent);
+	pointer-events: none;
+}
+
+/* Nadtitulek a perex přes oblohu: čitelnost (audit: nízký kontrast nadtitulku) */
+html.rf-on section.panoramaHero .panoramaHero__copy :is(.subtitle, .panoramaHero__lead, h1) {
+	text-shadow: 0 1px 2px rgb(0 0 0 / 0.45), 0 0 18px rgb(0 0 0 / 0.35);
+}
+html.rf-on section.panoramaHero .panoramaHero__copy .subtitle {
+	color: #fff;
+}
+
+/* Mobil: první obrazovka = H1 + perex + CTA + vyhledávání (audit: největší slabina) */
+@media (max-width: 639px) {
+	html.rf-on section.panoramaHero .panoramaHero__copy::before {
+		width: 100%;
+		background: linear-gradient(180deg, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.25) 70%, transparent);
+	}
+	html.rf-on section.panoramaHero .panoramaHero__lead {
+		display: block;
+		font-size: 15px;
+		line-height: 1.5;
+		margin-top: 10px;
+		max-width: 34ch;
+	}
+	html.rf-on section.panoramaHero .panoramaHero__lead br {
+		display: none;
+	}
+	/* Štítek projektu přetékal za pravý okraj */
+	html.rf-on section.panoramaHero .panoramaComplexTip {
+		display: none !important;
+	}
+}
+
+/* Vyhledávání přesunuté pod mobilní hero (JS: section.panoramaHero.rfHeroSearch) */
+html.rf-on section.panoramaHero.rfHeroSearch {
+	display: none;
+}
+@media (max-width: 639px) {
+	html.rf-on section.panoramaHero.rfHeroSearch {
+		display: block;
+		height: auto;
+		min-height: 0;
+		max-height: none;
+		overflow: visible;
+		background: var(--rf-surface);
+		color: var(--rf-ink);
+		padding: 20px var(--rf-gutter) 24px;
+		border-bottom: 1px solid var(--rf-line);
+	}
+	html.rf-on .rfHeroSearch__title {
+		margin: 0 0 12px;
+		font: 600 17px/1.3 Poppins, system-ui, sans-serif;
+	}
+	html.rf-on section.panoramaHero.rfHeroSearch .panoramaHero__quickSearch {
+		position: static;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+		width: 100%;
+		max-width: none;
+		min-height: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		transform: none;
+		background: none;
+		box-shadow: none;
+	}
+	html.rf-on section.panoramaHero.rfHeroSearch .panoramaHero__quickSearchItem {
+		min-width: 0;
+		padding: 10px 12px;
+		border: 1px solid var(--rf-line-strong);
+		border-radius: var(--rf-radius);
+		background: var(--rf-surface);
+	}
+	html.rf-on section.panoramaHero.rfHeroSearch .panoramaHero__quickSearchItem::before,
+	html.rf-on section.panoramaHero.rfHeroSearch .panoramaHero__quickSearchItem::after {
+		display: none;
+	}
+	html.rf-on section.panoramaHero.rfHeroSearch .panoramaHero__quickSearchSubmit {
+		grid-column: 1 / -1;
+		width: 100%;
+		height: 48px;
+		margin: 4px 0 0;
+		border-radius: var(--rf-radius);
+	}
+	html.rf-on section.panoramaHero.rfHeroSearch .panoramaHero__quickSearchMenu {
+		z-index: 60;
+	}
+}
+
+/* --- Hlavička a mobilní menu ------------------------------------------------ */
+
+/* CTA „Volné byty a ceník“ se na úzkém mobilu zalamovalo */
+@media (max-width: 479px) {
+	html.rf-on section.topBar a.button.button-main {
+		white-space: nowrap;
+		padding-inline: 12px;
+		font-size: 11px;
+		letter-spacing: 0.02em;
+	}
+}
+@media (max-width: 359px) {
+	html.rf-on section.topBar a.button.button-main {
+		display: none;
+	}
+}
+
+/* Mobilní menu: CTA a telefon (JS: .rfMenuCta) */
+html.rf-on .rfMenuCta {
+	display: grid;
+	gap: 10px;
+	margin: 24px 0 8px;
+	padding-top: 20px;
+	border-top: 1px solid var(--rf-line);
+}
+html.rf-on .rfMenuCta a {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 48px;
+	border-radius: var(--rf-radius);
+	font: 600 14px/1 Poppins, system-ui, sans-serif;
+	text-decoration: none;
+}
+html.rf-on .rfMenuCta .rfMenuCta__main {
+	background: var(--rf-green);
+	color: var(--rf-on-green);
+}
+html.rf-on .rfMenuCta .rfMenuCta__tel {
+	border: 1px solid var(--rf-line-strong);
+	color: var(--rf-ink);
+}
+
+/* --- Sticky mobilní lišta: Zavolat · Nabídka · Prohlídka (JS: .rfMobileBar) -- */
+html.rf-on .rfMobileBar {
+	display: none;
+}
+@media (max-width: 767px) {
+	html.rf-on .rfMobileBar {
+		position: fixed;
+		inset: auto 0 0;
+		z-index: 980;
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 6px;
+		padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+		background: rgb(255 255 255 / 0.96);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		box-shadow: 0 -1px 0 var(--rf-line), 0 -8px 24px rgb(0 0 0 / 0.06);
+		transition: transform var(--rf-dur-slow) var(--rf-ease-out);
+	}
+	html.rf-on .rfMobileBar a {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 3px;
+		min-height: 48px;
+		border-radius: var(--rf-radius);
+		color: var(--rf-ink);
+		font: 600 12px/1.1 Poppins, system-ui, sans-serif;
+		text-decoration: none;
+	}
+	html.rf-on .rfMobileBar a.is-main {
+		background: var(--rf-green);
+		color: var(--rf-on-green);
+	}
+	html.rf-on .rfMobileBar svg {
+		width: 18px;
+		height: 18px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.8;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	html.rf-on.rf-has-mobilebar body {
+		padding-bottom: calc(64px + env(safe-area-inset-bottom));
+	}
+	/* otevřené menu / modální okno lištu schová */
+	html.rf-on.uk-offcanvas-page .rfMobileBar,
+	html.rf-on.uk-modal-page .rfMobileBar {
+		transform: translateY(110%);
+	}
+	/* přepínač náhledu nad lištu */
+	html.rf-on.rf-has-mobilebar .refineSwitch {
+		bottom: calc(72px + env(safe-area-inset-bottom));
+	}
+}
+
+/* --- Dotykové cíle (audit: 27 prvků pod 32 px) ------------------------------- */
+@media (pointer: coarse) {
+	html.rf-on .cookie-bar-modal :is(button, .button, a.button) {
+		min-height: 44px;
+	}
+	html.rf-on section.topBar .menuTop .menuLink {
+		min-width: 44px;
+		min-height: 44px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+}
+
+/* --- Vizualizace domu: výběr patra ----------------------------------------- */
+
+/* Nápověda (JS: .rfVizHint) */
+html.rf-on .rfVizHint {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	margin: 0 0 14px;
+	font: 500 13px/1.4 Poppins, system-ui, sans-serif;
+	color: var(--rf-ink-2);
+}
+html.rf-on .rfVizHint::before {
+	content: "";
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--rf-green);
+	box-shadow: 0 0 0 4px rgb(66 199 135 / 0.2);
+}
+html.rf-on .rfVizHint .t-touch {
+	display: none;
+}
+@media (pointer: coarse) {
+	html.rf-on .rfVizHint .t-mouse {
+		display: none;
+	}
+	html.rf-on .rfVizHint .t-touch {
+		display: inline;
+	}
+}
+
+/* Mobil: vizualizace byla jen ~200 px vysoká a překrývalo ji tlačítko */
+@media (max-width: 767px) {
+	html.rf-on section.vizualize .rfVizScroll {
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		scrollbar-width: none;
+		margin-inline: calc(var(--rf-gutter) * -1);
+	}
+	html.rf-on section.vizualize .rfVizScroll::-webkit-scrollbar {
+		display: none;
+	}
+	html.rf-on section.vizualize .rfVizScroll > .maping {
+		width: 680px;
+		max-width: none;
+	}
+	html.rf-on section.vizualize p.link {
+		position: static !important;
+		transform: none !important;
+		margin-top: 16px;
+		text-align: center;
+	}
+}
+
+/* Výpis bytů: vizualizace nad nabídkou zabírala celou obrazovku */
+@media (min-width: 960px) {
+	html.rf-on section.unitsLayout section.vizualize .maping,
+	html.rf-on .unitsLayout .vizualize .maping {
+		width: min(100%, calc(56vh * 2));
+		margin-inline: auto;
+	}
+}
+
+/* --- Výpis jednotek: stav textem, ne jen tečkou ----------------------------- */
+html.rf-on .unitStateDot {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	width: auto !important;
+	height: auto !important;
+	background: none !important;
+	border: 0 !important;
+	vertical-align: middle;
+	font: 500 12px/1 Poppins, system-ui, sans-serif;
+	white-space: nowrap;
+}
+html.rf-on .unitStateDot::before {
+	content: "";
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--rf-green);
+}
+html.rf-on .unitStateDot::after {
+	content: attr(aria-label);
+	color: var(--rf-ink-2);
+}
+html.rf-on .unitStateDot.is-reserved::before {
+	background: #c77e1b;
+}
+html.rf-on .unitStateDot.is-sold::before {
+	background: #c0392b;
+}
+
+/* --- Detail jednotky: místo ~20 podobných stačí 4 --------------------------- */
+html.rf-on section.unitSlider .uk-slider-items > :nth-child(n + 5) {
+	display: none !important;
+}
+
+/* --- Kontakty: fotka makléřky překrývala podtitulek -------------------------- */
+html.rf-on section.topContact p.subtitle {
+	position: relative;
+	z-index: 2;
+	margin-bottom: clamp(48px, 6vw, 96px);
+}
+
+/* --- Náběhové animace (audit: 1–3 s prázdné stránky) ------------------------ */
+html.rf-on.brickReveal [data-brick-grid] > * {
+	transition-duration: 0.18s !important;
+	transition-delay: 0s !important;
+}
+html.rf-on .brickTile {
+	opacity: 1 !important;
+}
+html.rf-on .brickLoader {
+	display: none !important;
+}
+
+/* --- Kontrast: místa, kde šablona skládá barvy z více pravidel --------------- */
+/* (zbytek generuje tools/contrast-css.mjs → 86-contrast.css) */
+
+/* Hlavní CTA v hlavičce a patičce, boční kontaktní záložky: tmavý text na zelené */
+html.rf-on section.topBar a.button.button-main,
+html.rf-on section.footerMain .footerCta,
+html.rf-on section.footerMain .footerCta span,
+html.rf-on .widget a > span,
+html.rf-on .widget a > span :is(span, i) {
+	color: var(--rf-on-green) !important;
+}
+html.rf-on section.topBar a.button.button-main :is(i, .mdi, svg) {
+	color: inherit !important;
+	fill: currentColor;
+}
+/* „Ihned rezervovat“ a další obrysová tlačítka se zeleným textem */
+html.rf-on a.button.second,
+html.rf-on .button.second {
+	color: var(--rf-green-ink) !important;
+}
+
+/* Formulářové sekce přes fotku: bílý text na světle zeleném závoji (audit) →
+   závoj tmavší zelený, bílý text projde (≥ 7:1) */
+html.rf-on section.brokerOffer::before,
+html.rf-on section.form::before {
+	background-color: #145c3b !important;
+	opacity: 0.93;
+}
+
+/* Kontakty: zelená karta makléřky s bílým textem */
+html.rf-on section.topContact .entityBox {
+	background-color: var(--rf-green-ink) !important;
+}
+
+/* Štítek projektu v panoramatu, volby výběru, plovoucí popisky polí */
+html.rf-on section.panoramaHero .panoramaComplexTip h2 {
+	color: var(--rf-green-ink) !important;
+}
+html.rf-on section.panoramaHero .panoramaComplexTip p,
+html.rf-on select option {
+	color: var(--rf-ink-2) !important;
+}
+html.rf-on .form-js-label label {
+	color: var(--rf-muted) !important;
+}
+/* Stav „Rezervace“ (oranžová na světle oranžové 2,97:1) */
+html.rf-on label.reserved {
+	color: #8a5208 !important;
+}
+/* Cookie lišta: zelený nadpis */
+html.rf-on .cookie-bar-modal .main-title {
+	color: var(--rf-green-ink) !important;
+}
+
+/* --- Plovoucí kontakt (e-mail, telefon) vpravo — vlevo překrýval perex a CTA hero */
+html.rf-on .widget {
+	left: auto;
+	right: 0;
+	align-items: flex-end;
+}
+html.rf-on .widget a {
+	transform: translateX(calc(100% - 4.4rem));
+	justify-content: flex-start;
+}
+html.rf-on .widget a:hover,
+html.rf-on .widget a:focus-visible {
+	transform: translateX(0);
+}
+html.rf-on .widget a > span {
+	flex-direction: row;
+	border-radius: 8px 0 0 8px;
+	padding: 1.3rem 2rem 1.3rem 1.2rem;
+}
+html.rf-on .widget a i.mdi {
+	margin: 0 1.5rem 0 0;
+}
+
+/* ==========================================================================
+   Homepage pro prezentaci šablony (JS: videoHero, buildingFilter, leadBlock)
+   ========================================================================== */
+
+/* --- Hero s videem ---------------------------------------------------------- */
+html.rf-on section.panoramaHero.rfVideoHero {
+	background: #1d2a22;
+}
+html.rf-on .rfVideoHero__video {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	z-index: 0;
+}
+html.rf-on .rfVideoHero__shade {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	background: linear-gradient(0deg, rgb(0 0 0 / 0.35), transparent 45%);
+}
+html.rf-on section.panoramaHero.rfVideoHero .panoramaHero__copy {
+	z-index: 40;
+}
+
+/* Vyhledávací lišta na desktopu vpravo dole v hero */
+@media (min-width: 1200px) {
+	html.rf-on section.panoramaHero.rfVideoHero .panoramaHero__quickSearch {
+		top: auto;
+		bottom: clamp(24px, 5vh, 56px);
+		left: auto;
+		right: var(--rf-gutter);
+		transform: none;
+		width: min(1040px, calc(100% - 2 * var(--rf-gutter) - 560px));
+		max-width: none;
+	}
+}
+@media (min-width: 640px) and (max-width: 1199px) {
+	html.rf-on section.panoramaHero.rfVideoHero .panoramaHero__quickSearch {
+		top: auto;
+		bottom: 24px;
+		width: calc(100% - 2 * var(--rf-gutter));
+	}
+	html.rf-on section.panoramaHero.rfVideoHero .panoramaHero__copy {
+		padding-bottom: 120px;
+	}
+}
+/* pět polí místo čtyř: užší položky */
+html.rf-on section.panoramaHero .panoramaHero__quickSearchItem {
+	min-width: 0;
+}
+html.rf-on section.panoramaHero .panoramaHero__quickSearchOption[hidden] {
+	display: none;
+}
+
+/* --- Kontaktní formulář s makléřem nad patičkou ------------------------------ */
+html.rf-on .rfLead__card {
+	display: flex;
+	margin-top: 0;
+	gap: 20px;
+	align-items: center;
+	max-width: 520px;
+	margin-left: auto;
+	padding: 24px;
+	border-radius: var(--rf-radius-lg);
+	background: var(--rf-surface);
+	color: var(--rf-ink);
+	box-shadow: var(--rf-shadow-md);
+}
+html.rf-on .rfLead__card img {
+	flex: none;
+	width: 120px;
+	height: 140px;
+	object-fit: cover;
+	object-position: top;
+	border-radius: var(--rf-radius);
+	background: var(--rf-green-soft);
+}
+html.rf-on .rfLead__role {
+	margin: 0 0 4px;
+	font: 600 1.2rem/1.3 Poppins, system-ui, sans-serif;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--rf-green-ink);
+}
+html.rf-on .rfLead__name {
+	margin: 0 0 12px;
+	font: 600 2.2rem/1.2 Poppins, system-ui, sans-serif;
+	color: var(--rf-ink);
+}
+html.rf-on .rfLead__card a {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 32px;
+	font: 500 1.5rem/1.3 Poppins, system-ui, sans-serif;
+	color: var(--rf-green-ink);
+	text-decoration: none;
+}
+html.rf-on .rfLead__card a:hover {
+	text-decoration: underline;
+}
+@media (max-width: 959px) {
+	/* sloupce pod sebou: karta stejně široká a zarovnaná jako formulář (formPack 61rem, na střed) */
+	html.rf-on .rfLead__card {
+		width: 100%;
+		max-width: 61rem;
+		margin: 40px auto 0;
+	}
+}
+@media (max-width: 479px) {
+	html.rf-on .rfLead__card {
+		gap: 14px;
+		padding: 16px;
+		align-items: flex-start;
+	}
+	html.rf-on .rfLead__card img {
+		width: 84px;
+		height: 100px;
+	}
+	html.rf-on .rfLead__name {
+		font-size: 1.9rem;
+		margin-bottom: 6px;
+	}
+	html.rf-on .rfLead__card a {
+		font-size: 1.4rem;
+		word-break: break-word;
+	}
+}
+
+/* Lišta dole v hero: nabídky se otevírají nahoru (dolů by je hero ořízlo) */
+html.rf-on section.panoramaHero.rfVideoHero .panoramaHero__quickSearchMenu {
+	top: auto;
+	bottom: calc(100% + 10px);
+}
+
+/* --- Panoráma v sekci Lokalita (místo mapy) --------------------------------- */
+html.rf-on section.homepageInteractive .rfPanoBox {
+	position: relative;
+	height: 100%;
+	min-height: 0;
+	overflow: hidden;
+	border-radius: var(--rf-radius-lg);
+}
+html.rf-on section.homepageInteractive .rfPanoBox > section.panoramaHero {
+	height: clamp(460px, 72vh, 760px);
+	min-height: 0;
+	max-height: none;
+	border-radius: var(--rf-radius-lg);
+	isolation: isolate;
+}
+@media (max-width: 959px) {
+	html.rf-on section.homepageInteractive .rfPanoBox > section.panoramaHero {
+		height: 64svh;
+		min-height: 400px;
+	}
+}
+@media (max-width: 639px) {
+	html.rf-on section.homepageInteractive .rfPanoBox,
+	html.rf-on section.homepageInteractive .rfPanoBox > section.panoramaHero {
+		border-radius: 0;
+	}
+}
+
+/* --- Body lokality: ikony jako piny panoramatu místo fajfek ------------------ */
+html.rf-on section.homepageInteractive .container .uk-grid > div .content .text ul li.rfLocItem {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-bottom: 12px;
+}
+html.rf-on section.homepageInteractive .container .uk-grid > div .content .text ul li.rfLocItem::before {
+	display: none;
+}
+html.rf-on .rfLocIcon {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 3.4rem;
+	height: 3.4rem;
+	border-radius: 50%;
+	background: var(--rf-green);
+	color: #fff; /* jako piny panoramatu */
+	font-size: 1.8rem;
+	box-shadow: 0 0 0 3px #fff, 0 0 0 4px rgb(66 199 135 / 0.35);
+}
+html.rf-on section.homepageInteractive .container .uk-grid > div .content .text ul {
+	padding-left: 0;
+	margin-left: 0;
+}
+
+/* --- Vizualizace domu: pulzující obrys budov (JS: .rfHouseOutline) ----------- */
+html.rf-on section.vizualize .maping {
+	position: relative;
+}
+html.rf-on .rfHouseOutline {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	aspect-ratio: 2 / 1;
+	height: auto;
+	z-index: 5;
+	pointer-events: none;
+	overflow: visible;
+}
+html.rf-on .rfHouseOutline rect {
+	fill: rgb(66 199 135 / 0.14);
+	stroke: #42c787;
+	stroke-width: 4;
+	vector-effect: non-scaling-stroke;
+	animation: rfHousePulse 2.4s ease-in-out infinite;
+	transition: opacity 0.4s ease;
+}
+@keyframes rfHousePulse {
+	0%, 100% { fill: rgb(66 199 135 / 0.06); stroke-opacity: 0.45; }
+	50% { fill: rgb(66 199 135 / 0.26); stroke-opacity: 1; }
+}
+/* po prvním najetí převezme zvýraznění pater šablona */
+html.rf-on .maping.rf-touched .rfHouseOutline rect {
+	animation: none;
+	opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+	html.rf-on .rfHouseOutline rect {
+		animation: none;
+		fill: rgb(66 199 135 / 0.16);
+	}
+}
+
+/* Sekce převzatá z Kontaktů: na homepage chyběly boční okraje kontejneru */
+html.rf-on section.form.rfLead .container {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: var(--rf-shell);
+	margin-inline: auto;
+	padding-inline: var(--rf-gutter);
+}
+html.rf-on .rfLead__card {
+	box-sizing: border-box;
+}
+@media (min-width: 960px) and (max-width: 1199px) {
+	html.rf-on section.form.rfLead .container > .content > div > div:first-child {
+		width: 58%;
+	}
+	html.rf-on section.form.rfLead .container > .content > div > div:last-child {
+		width: 42%;
+	}
+}
+
+/* ---- 86-contrast.css ---- */
+/* GENEROVÁNO tools/contrast-css.mjs — needitovat ručně.
+   Kontrast textu WCAG AA nad barvami šablony (viz popis v generátoru). */
+:where(html.rf-on) .overviewPack .content .checkbox label a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.topBar .container .uk-grid>div .menuTop .menuLink .icon svg {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.topBar .container .uk-grid>div .menuTop .menuLink .icon .number {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.topBar .container .uk-grid>div .menuTop .menuLink .text {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.topBar .container .uk-grid>div .menuTop .languageSwitcher>a span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.topBar .container .uk-grid>div .menuTop .languageSwitcher .uk-drop ul li a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.topBar .container .uk-grid>div .menuTop .languageSwitcher .uk-drop ul li.uk-active a {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.topBar .container .uk-grid>div .menuBar .uk-navbar.menu-text>div .uk-navbar-nav li a {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .uk-offcanvas-bar .top .menuLink {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .uk-offcanvas-bar .top .menuLink>.icon .number {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .uk-offcanvas-bar .top .languageSwitcher .uk-drop ul li a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .uk-offcanvas-bar .top .languageSwitcher .uk-drop ul li.uk-active a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .uk-offcanvas-bar .top .languageSwitcher .language li+li:before {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .uk-offcanvas-bar .offcanvasMainNav>li.uk-active>a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .button, :where(html.rf-on) .uk-button {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .button:hover, :where(html.rf-on) .uk-button:hover {
+    color: var(--rf-green-ink) !important
+}
+:where(html.rf-on) .button.second, :where(html.rf-on) .uk-button.second {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .button.second:hover, :where(html.rf-on) .uk-button.second:hover {
+    color: var(--rf-on-green) !important
+}
+:where(html.rf-on) .button-flat {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .button-flat:hover {
+    color: var(--rf-on-green) !important
+}
+:where(html.rf-on) .qtipBox-bodyPart .value {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .qtipBox-bodyPart .value.greeny {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .qtipBox-bodyPart .qtipBox-rooms>.label {
+    color: var(--rf-muted)
+}
+@media only screen and (max-width:959px) {
+    :where(html.rf-on) body.frontend-contact section.form .container>.content .formPack form>.uk-grid>div:nth-last-child(2)>.submitPack:hover input[type="submit"] {
+        color: var(--rf-green-ink)
+    }
+}
+@media only screen and (max-width:959px) {
+    :where(html.rf-on) body.frontend-contact section.form .container>.content .formPack form>.uk-grid>div:nth-last-child(2)>.submitPack input[type="submit"]:hover {
+        color: var(--rf-on-green) !important
+    }
+}
+:where(html.rf-on) .addressCard a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.topContact .container .uk-grid>div .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.faqPack .container .faqTabs li a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.faqPack .container .faqList li .uk-accordion-title .ico i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.slideshow .uk-slideshow>div .uk-slideshow-items li .slide>div .text label {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .textPanel h2 span {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .textPanel ul li {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .textPanel p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .dispositionPanel .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .dispositionPanel .tab .tab__count {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .dispositionPanel .tab.active .tab__count {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .dispositionPanel .tab.isEmpty {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .dispositionPanel .tab.isEmpty .tab__count {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .dispositionPanel .building .count strong {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .dispositionPanel .stats .price, :where(html.rf-on) section.homepageGallery .container .content .uk-grid>div .dispositionPanel .stats .area {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.contentSlider .container .top .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contentSlider .container .top h2 span {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contentSlider .container .uk-slider>div .uk-slider-container .uk-slider-items>div .slide .uk-grid>div .text label {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contentSlider .container .uk-slider>div .uk-slider-container .uk-slider-items>div .slide .uk-grid>div .text p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.vizualize .container .top .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.dispositionShowcase .top .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.dispositionShowcase .tab .tab__count {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.dispositionShowcase .tab.active .tab__count {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.dispositionShowcase .tab.isEmpty {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.dispositionShowcase .tab.isEmpty .tab__count {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.dispositionShowcase .stats .price, :where(html.rf-on) section.dispositionShowcase .stats .area {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.dispositionShowcase .building .count strong {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.benefits .container .content .uk-grid>div .benefitsBox p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.homepageInteractive .container .uk-grid>div .content .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.homepageInteractive .container .uk-grid>div .content .text ul li {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.newsExtract .container .content .top .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.newsExtract .container .content .top .uk-grid>div .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.newsExtract .newsExtractCard .newsExtractCard__meta {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.newsExtract .newsExtractCard>p:not(.newsExtractCard__meta) {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .newsBox .content .date {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .newsBox .content p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.homepageGallery .container .galleryColumn .galleryColumn__heading .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .homepageGalleryDispositionGrid section.dispositionShowcase .stats .count strong {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.form .container>.content .uk-grid>div .formPack form .uk-grid>div .submitPack input[type="submit"] {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.form .container>.content .uk-grid>div .formPack form .uk-grid>div .submitPack:hover input[type="submit"] {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.form .container>.content .uk-grid>div .entityBox .content p {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.form .container>.content .uk-grid>div .entityBox .content p.subtitle {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.form .container>.content .uk-grid>div .entityBox .content p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.form .container>.content .uk-grid>div .entityBox .content p a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.blogDetail .container .text p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.newsList .uk-subnav.newsFilter li:hover a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.newsList .newsBox .content .date {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.newsList .newsBox .content p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.pageTopPanel.pageTopPanel--investment .container .uk-grid>div .text .investmentCalculatorIntro {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.pageTopPanel .container .uk-grid>div .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body.frontend-mapmarker section.pageTopPanel .backLink a, :where(html.rf-on) body.frontend-news section.pageTopPanel .backLink a {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-mapmarker section.pageTopPanel .backLink .chevronBack, :where(html.rf-on) body.frontend-news section.pageTopPanel .backLink .chevronBack {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.contentPage .container .uk-grid>div .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contentPage .container .uk-grid>div .text ul.checkList li:before {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.videoContent .container .uk-grid>div .video.videoFacade .playIcon {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.videoContent .container .uk-grid>div .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contentGallery .container .uk-switcher .galleryGrid-arrows button:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.virtualTour .container .top .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.virtualTour .tourVideo .play {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.mapContent .container .mapWrapper .legend p label:before {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .mapPopup-address {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .mapPopup-more {
+    color: var(--rf-on-green) !important
+}
+@media only screen and (max-width:1199px) {
+    :where(html.rf-on) section.form.contactSection .container>.content .formPack form>.uk-grid>div:nth-last-child(2)>.submitPack:hover input[type="submit"] {
+        color: var(--rf-green-ink)
+    }
+}
+@media only screen and (max-width:1199px) {
+    :where(html.rf-on) section.form.contactSection .container>.content .formPack form>.uk-grid>div:nth-last-child(2)>.submitPack input[type="submit"]:hover {
+        color: var(--rf-on-green) !important
+    }
+}
+:where(html.rf-on) section.form.contactSection .contacts-wrapper .ico {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contentSubPage .container .content .uk-switcher .uk-grid>div .pageConBox .pageConBox__distance {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contentSubPage .container .content .uk-switcher .uk-grid>div .pageConBox .pageConBox__distanceSep {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.contentSubPage .container .content .uk-switcher .uk-grid>div .pageConBox p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.subpageExtract .container .content .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.subpageExtract .container .content>.uk-grid>div .subpageBox p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.contentBanner .container>.uk-grid>div .text>.uk-grid>div .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.otherProjects .top .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.otherProjects .projectSlider-nav:hover {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.otherProjects .projectCard-body .pill {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.otherProjects .projectCard-body .loc i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.otherProjects .projectCard-body .desc {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.otherProjects .projectCard-body .checkList li i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reobroker section.pageTop.makler .jobPosition {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .frontend-reobroker section.pageTop.makler .contactBanner .contactBanner-wrapper a.next-link:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reobroker .section-title .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reobroker .productBox .top .label {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reobroker .productBox .bottom p.attribute {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.comparisonSlider .container>.uk-grid>div .uk-slider>div .uk-slider-container .uk-slider-items>div .comparisonSlideBottom .blurPrice {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.comparisonSlider .container>.uk-grid>div .uk-slider>div .uk-slider-container .uk-slider-items>div .comparisonSlideBottom .buttonWrapper .remove {
+    color: var(--rf-green-ink)
+}
+@media only screen and (max-width:639px) {
+    :where(html.rf-on) section.comparisonSlider .container .uk-slider-container .uk-slider-items>div .comparisonSlideBottom>div:not(.buttonWrapper)::before {
+        color: var(--rf-muted)
+    }
+}
+:where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .text .title p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .socialPack .uk-grid>div .social h3, :where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .socialPack .uk-grid>div .social .shareTrigger {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .socialPack .uk-grid>div .social .shareTrigger:hover, :where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .socialPack .uk-grid>div .social .shareTrigger:focus-visible {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .socialPack .uk-grid>div .social a i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .socialPack .uk-grid .pdf a, :where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .socialPack .uk-grid .pdf button {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .socialPack .uk-grid .pdf a i, :where(html.rf-on) section.favouriteTop .container .content>.uk-grid>div .socialPack .uk-grid .pdf button i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.favoriteList .container .content .emptyNote {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.form .formPack .selectedUnits button.unitChip .x {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reoprojectlist .label {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reoprojectlist .label.project-status-finished {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .frontend-reoprojectlist section.projectHero .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reoprojectlist section.projectHero .text .content {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .frontend-reoprojectlist section.sidePhoto.developmentProject .projectCard-body .loc i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reoprojectlist section.sidePhoto.developmentProject .projectCard-body .desc {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .frontend-reoprojectlist section.sidePhoto.developmentProject .projectCard-body .checkList li i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.projectListTitle .container .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.filterPanel .container .content .row .col .Noui .input-slider-width .input-slider-result>div .com, :where(html.rf-on) section.filterPanel .container .content .row .col .Noui .input-slider-width .input-slider-result>div .unit {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.filterPanel .container .content .row .col .last a {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.filterPanel .container .content .row .col .last a i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.extractFlat .container .content .uk-grid>div .next a {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.extractFlat .container .content .listExtract .extract .flatRow div.col6 label {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .flatCard .top label {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .flatCard .title p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .flatCard .title p span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .flatCard .price span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .flatCard .price .blurPrice {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .flatCard .catalog a {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .flatListing .flatListingHead .viewToggle label:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) #flatViewTiles:checked~.container .viewToggle label.tiles, :where(html.rf-on) #flatViewList:checked~.container .viewToggle label.list {
+    color: var(--rf-on-green) !important
+}
+:where(html.rf-on) section.floorExtract .container .content .backLink a {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.floorExtract .container .content .backLink a i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.floorExtract .container .content .floorBtn.is-active {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) #viz-cursor .viz-cursor-inner {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) #viz-cursor .viz-cursor-label {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .frontend-reounit .planBox__hint {
+    color: var(--rf-muted)
+}
+@media only screen and (max-width:639px) {
+    :where(html.rf-on) .frontend-reounit .unitStickyCta {
+        color: var(--rf-on-green)
+    }
+}
+:where(html.rf-on) section.purchaseSteps .container>.subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reounit .videoContent .addressCard a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reounit section.pageTopPanel .container .uk-grid>div .backLink a {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .frontend-reounit section.pageTopPanel .container .uk-grid>div .backLink a .chevronBack {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.unitDetail .container .content .uk-grid>div .text .top .watch span {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.unitDetail .container .content .uk-grid>div .text .awai span.green {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.calculator .container .content .top .title .subtitle {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.calculator .container .content .calculatePanel .uk-grid>div .row label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.calculator .container .content .calculatePanel .uk-grid>div .row>div span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.calculator .container .content .calculatePanel .bottom p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.calculator .container .content .calculatePanel .bottom p span {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .top .title .subtitle {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .top .toggleIcon {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .presets>span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .presets button.active {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .uk-grid>div .row label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .uk-grid>div .row .numberField .stepper {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .uk-grid>div .row .numberField .stepper:hover {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .uk-grid>div .row>div span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .phaseSwitch .phaseSwitch__label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .phaseSwitch button {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .results .resultBox strong {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .results .resultBox .breakdown {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .results .resultBox .breakdown .sep {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .chartSection .fvTable th {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .chartSection .fvTable td.risk {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .scenarioSection .scenarioTable th {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.investmentCalculator .container .content .calculatePanel .scenarioSection .scenarioTable td:first-child {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.unitSlider .container .content>.subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .reoReservation-modal .reoReservation-copy .reoReservation-serious {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .reoReservation-modal .reoReservation-copy .reoReservation-conditions {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .reoReservation-modal .reoReservation-form label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .reoReservation-modal .reoReservation-form .reoReservation-submit .button {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .reoReservation-modal .reoReservation-form .reoReservation-gdpr {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .reoReservation-modal .reoReservation-form .reoReservation-gdpr a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .modalWatchdog .uk-modal-dialog .top .uk-grid>div .watchBox>.icon {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .modalWatchdog .uk-modal-dialog .top .uk-grid>div .watchBox .text .subtitle {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .modalWatchdog .uk-modal-dialog .top .uk-grid>div .watchBox .text form .uk-grid>div fieldset label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .modalWatchdog .uk-modal-dialog .top .uk-grid>div .watchBox .text form .uk-grid>div .submitPack:hover, :where(html.rf-on) .modalWatchdog .uk-modal-dialog .top .uk-grid>div .watchBox .text form .uk-grid>div .submitPack:active, :where(html.rf-on) .modalWatchdog .uk-modal-dialog .top .uk-grid>div .watchBox .text form .uk-grid>div .submitPack:focus-within {
+    color: var(--rf-on-green) !important
+}
+:where(html.rf-on) .modalWatchdog .uk-modal-dialog .top .uk-grid>div .watchBox .text form .uk-grid>div.uk-width-1-1 p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .modalWatchdog .uk-modal-dialog .top .uk-grid>div .watchBox .text form .uk-grid>div.uk-width-1-1 p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .modalWatchdog .uk-modal-dialog .unitExtract .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.brokerOffer .form button[type="submit"], :where(html.rf-on) section.brokerOffer .form input[type="submit"], :where(html.rf-on) section.brokerOffer .form .button {
+    color: var(--rf-green-ink) !important
+}
+:where(html.rf-on) section.brokerOffer .form button[type="submit"]:hover, :where(html.rf-on) section.brokerOffer .form input[type="submit"]:hover, :where(html.rf-on) section.brokerOffer .form .button:hover {
+    color: var(--rf-green-ink) !important
+}
+:where(html.rf-on) section.brokerOffer .form .submitPack p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.brokerOffer .colleagueBox .colleagueBoxTop .about .perex {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.brokerOffer .colleagueBox .colleagueBoxTop .about a.next-link:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.unitReasons .top .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.unitReasons .reason .reason__delta {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.unitReasons .reason .reason__note {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.unitDetail .container .content .uk-grid>div .text .price strong {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .frontend-reounitlist section.projectListTitle .container .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .frontend-reounitlist .unitsFilter .floorPlansToggle .switch__label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .frontend-reounitlist .vizualizeHideSlot .vizualizeHide {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .filterPanel .filterLabel {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .filterPanel .viewToggle a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .reoUnitListShareModal .modalHead .legend {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .reoUnitListShareModal .copyLink .copyLink__button {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .reoUnitListShareModal .copyLink .copyLink__button.is-copied {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .reoUnitListShareModal .modalFoot .dataNotice {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .reoUnitListShareModal .modalSuccess .icon {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .reoUnitListShareModal .modalSuccess p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .unitsTableSection .unitsTable .tRow.tHead {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .unitsTableSection .unitsTable .tRow .cName a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .unitsTableSection .unitsTable .tRow .cPrice .blurPrice {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .unitsTableSection .unitsTable .tRow .cState label {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .unitsTableSection .unitsTable .tRow .cAction .button {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .unitsTableSection .unitsTable .tRow.sold .cName {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .unitsTableSection .loadMore .button, :where(html.rf-on) .unitsTableSection .loadMore input[type="submit"], :where(html.rf-on) .unitsTableSection .loadMore button {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .blogBox .date p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .blogBox .date p span {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .blogBox .content .topTitle {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .blogBox .content>p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .blogBox .content button {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .blogBox2 .text button {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .productBox .top .comparator:hover svg {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .productBox .bottom .basketPack>div form .number .number-input .buttons button {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .productBox .bottom .pricePack .uk-grid>div .markBox .mark {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .productBox .bottom .pricePack .uk-grid>div .markBox .stock .green {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .productBox .bottom .pricePack .uk-grid>div .priceBox .old {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .referenceBox .author {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .basketDrop .uk-dropdown .uk-nav li .shopping-cart-item .uk-grid>div .remove i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .basketDrop .uk-dropdown .uk-nav li .bottomButton input[type="submit"] {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.forum .consulting .top .sorting .uk-drop ul li a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .signModal .uk-modal-dialog .uk-modal-header p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .signModal .uk-modal-dialog .uk-modal-body form p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .signModal .uk-modal-dialog .uk-modal-body form .row .facebook {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .newFilter .filterPack .filterClose i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .newFilter .filterPack .filterTop {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .newFilter .filterPack .filterTop:hover {
+    color: var(--rf-green-ink) !important
+}
+:where(html.rf-on) .newFilter .filterPack .filterTop.second {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .newFilter .filterPack .filterTop.second:hover {
+    color: var(--rf-on-green) !important
+}
+:where(html.rf-on) .newFilter .filterPack .filterPackContent .categories .uk-accordion>li .uk-accordion-content ul li a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) .newFilter .filterPack .filterPackContent .selectedFilters .row {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .newFilter .filterPack .filterPackContent .price .Noui .input-slider-width .input-slider-result>div .com {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .newFilter .filterPack .filterPackContent .mark .markPack label.end, :where(html.rf-on) .newFilter .filterPack .filterPackContent .mark .markPack button.end {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .newFilter .filterPack .filterPackContent .mark .markSearch input[type="search"]::-webkit-input-placeholder {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .newFilter .filterPack .filterPackContent .mark .markSearch input[type="search"]::-moz-placeholder {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .newFilter .filterPack .filterPackContent .mark .markSearch input[type="search"]:-ms-input-placeholder {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .newFilter .filterPack .filterPackContent .mark .markSearch input[type="search"]:-moz-placeholder {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .newFilter .filterPack .filterPackContent .mark .markBox .row span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.basketList .container .buttons .cart-total .total h3 {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.basketList .container .buttons .cart-total .total .price-total span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.basketList .container .buttons .cart-total .total .price-total-with-vat span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-total .total .price-total {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-total .total .price-total-with-vat {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div>.content .deleteAll {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div>.content .deleteAll i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div>.content .sale .saleTitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div>.content .sale .saleTitle i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div>.content .sale .saleContent input[type="text"]::-webkit-input-placeholder, :where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div>.content .sale .saleContent input[type="text"]::-moz-placeholder, :where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div>.content .sale .saleContent input[type="text"]:-ms-input-placeholder, :where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div>.content .sale .saleContent input[type="text"]:-moz-placeholder {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div>.content .sale .saleContent a.check {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-total>.uk-grid>div .driveFree .uk-grid>div .content p.price {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-info table tbody tr td.description h3 a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-info table tbody tr td.unit span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.basketList .container .extract .cart-info table tbody tr td.count .spinner .nav .counter-controller {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.blogPack .container .blogExtract>.uk-grid>div>.text>p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.blogPack .container .blogExtract>.uk-grid>div .categoryBlog ul li:hover a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.blogDetailContent .container .text p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.blogDetailContent .container .text p a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.categoryExtract>.uk-grid>div .extractTop .searchResult {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.categoryExtract>.uk-grid>div .extractTop .sorting .uk-drop ul li a:after, :where(html.rf-on) section.categoryExtract>.uk-grid>div .extractTop .sorting .uk-drop ul li label:after {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.categoryExtract>.uk-grid>div .extractTop .sorting .uk-drop ul li a:hover, :where(html.rf-on) section.categoryExtract>.uk-grid>div .extractTop .sorting .uk-drop ul li label:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.subcategoryPack .container .uk-grid>div .subBox:hover h3 {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.subcategoryPackVersion .container .uk-grid>div .subBox2 .text p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .filterPackContent .selectedFilters .row {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .filterPackContent .price .Noui .input-slider-width .input-slider-result>div .com {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .filterPackContent .mark .markPack label.end {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .filterPackContent .mark .markSearch input[type="search"]::-webkit-input-placeholder {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .filterPackContent .mark .markSearch input[type="search"]::-moz-placeholder {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .filterPackContent .mark .markSearch input[type="search"]:-ms-input-placeholder {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .filterPackContent .mark .markSearch input[type="search"]:-moz-placeholder {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .filterPackContent .mark .markBox .row span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .formPack>p {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .formPack form .uk-grid>div fieldset label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .formPack form .uk-grid>div fieldset.sucess i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .formPack form .uk-grid>div p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .formPack form .uk-grid>div p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text>a {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text>a:hover {
+    color: var(--rf-green-ink) !important
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text>a.second {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text>a.second:hover {
+    color: var(--rf-on-green) !important
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text .uk-grid>div a {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text .uk-grid>div a:hover {
+    color: var(--rf-green-ink) !important
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text .uk-grid>div a.second {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text .uk-grid>div a.second:hover {
+    color: var(--rf-on-green) !important
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text .branch h3 {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contactPack .uk-grid>div .text .branch .row>span:first-of-type i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.entityContact .container .uk-grid>div .entityPack .text h3 {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.entityContact .container .uk-grid>div .entityPack .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.entityContact .container .uk-grid>div .entityPack .text p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.entityContact .container .uk-grid>div .entityPack .text p a span {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.customer .container .form-my-account .topBar .uk-grid>div .switcherTop li a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.customer .container .form-my-account .topBar .uk-grid>div .switcherTop li.uk-active a {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.customer .container .form-my-account .topBar .uk-grid>div .switcherTop li:hover a {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.customer .container .form-my-account .topBar .uk-grid>div .logout a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.customer .container .form-my-account .topBar .uk-grid>div .logout a i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.customer .container .content .bottom .listContentCustomer .content.product .switcherPackList .switcherTop li a i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.customer .container .content .bottom .listContentCustomer .content.product .switcher .listContent .extract table tbody tr td.unit span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) .deliveryAccordion li .uk-accordion-title {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.productSwich .container .filterTop a {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.contentSection .container .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.contentSection .container .uk-grid>div .text h3 {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.categoryPack .container .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.calendars .container .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.calendars .container .uk-grid>div .newsPack .newsBox .newsBoxContent .row .col3 a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.calendars .container .uk-grid>div .newsPack .newsNav .up i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.calendars .container .uk-grid>div .newsPack .newsNav .down i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.calendars .container .uk-grid>div .newsPack .newsNav h3 {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.referenceSlider .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.referenceSlider .sliderPack .uk-slider>div .navigate a i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.referenceSlider .sliderPack .navRightBar h3 {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.referenceSlider .container .uk-slider>div .navigation a i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.referenceSlider .container .navigBar h3 {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.aboutFirm .container .content .uk-grid>div .text .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.threeBanners .container .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.blogSlider .container .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.blogSlider .container .navigBar h3 {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.blogSlider .container .uk-slider>div .navigation a i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.blogSliderVertical .container .content .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.blogSliderVertical .container .content .blogSlidePack .blogPack .uk-grid>div .blogBoxSec .date p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.blogSliderVertical .container .content .blogSlidePack .blogPack .uk-grid>div .blogBoxSec .date p span {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.blogSliderVertical .container .content .blogSlidePack .blogPack .uk-grid>div .blogBoxSec .text .topTitle {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.blogSliderVertical .container .content .blogSlidePack .blogPack .uk-grid>div .blogBoxSec .text button {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.blogSliderVertical .container .content .blogSlidePack .blogNavigate .up i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.blogSliderVertical .container .content .blogSlidePack .blogNavigate .down i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.blogSliderVertical .container .content .blogSlidePack .blogNavigate h3 {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.pageConnection .container .pdfPack .uk-grid>div .pdfBox a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.pageConnection .container .pdfPack .uk-grid>div .pdfBox a span.ico svg {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.pageConnection .container .pdfPack .uk-grid>div .pdfBox a span.text {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.pageConnection .container .pdfPack .uk-grid>div .pdfViewBox p {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.pageConnection .container .videoPack .uk-grid>div .rightSide .newNav .up i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.pageConnection .container .videoPack .uk-grid>div .rightSide .newNav .down i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.pageConnection .container .videoPack .uk-grid>div .rightSide .newNav h3 {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.pageConnection .gallery .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.gallery .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.lexiconPack .container .lexiconExtract .uk-grid>div .dictionary-letter-list li a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.lexiconContent .container .content .uk-grid>div .button.second:hover {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.lexiconDetail .container .topExtract .dictionary-pagination-wrapper a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.lexiconDetail .container .topExtract .dictionary-pagination-wrapper a.active {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.lexiconDetail .container .topExtract .dictionary-pagination-wrapper a:hover {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.lexiconDetail .container .bottom h2 {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.confirmation .container .content .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.pageContent .container .text p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.pageContent .container .text p a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.pageContent.pageContent--legal .container .text a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.pageForm .container .formPack>p {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.pageForm .container .formPack form .uk-grid>div fieldset label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.pageForm .container .formPack form .uk-grid>div fieldset.sucess i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.pageForm .container .formPack form .uk-grid>div p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.pageForm .container .formPack form .uk-grid>div p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .verticalSlider .navig .up i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .verticalSlider .navig .down i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .verticalSlider .navig h3 {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .content .titlePanel .icons #frm-printPDFForm:hover button i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .content .titlePanel .icons .letThemKnow:hover i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .content .titlePanel .icons .variantComparison:hover button i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .content .textBox .link {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .content .textBox .link i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .content .variants .row .variantDrop .uk-card ul li a:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .content .variants .row.end p span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .content .addBasket .basketPack .number .number-input .buttons button {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .variantPanel .variantRow .top .col p span.green {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .variantPanel .variantRow .top .col p span.green i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productDetail .container>.uk-grid>div .variantPanel .variantRow .bottom .number .number-input .buttons button {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.productContent .container>.content .uk-grid>div .textContent .uk-switcher li .con .uk-grid>div .pdf i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productContent .container>.content .uk-grid>div .textContent .uk-switcher li .con .uk-grid>div .pdf:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productContent .container>.content .uk-grid>div .textContent .uk-accordion li .uk-accordion-content .uk-grid>div .pdf i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productContent .container>.content .uk-grid>div .textContent .uk-accordion li .uk-accordion-content .uk-grid>div .pdf:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.productLine .container .subtitle {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.referenceTop .container .top .text>p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.referenceMap .mapPack .mapInfo p label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.registerPack .container form>.uk-grid>div .uk-grid>div .row fieldset .mdi {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.registerPack .container form>.uk-grid>div .uk-grid>div .row fieldset label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.searchPage .container .uk-switcher li>h2 {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.searchPage .container .uk-switcher li .subBox .text p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.shipping-payment .container .uk-grid>div .shipping-container .underRow .content .uk-grid>div .contact p i, :where(html.rf-on) section.shipping-payment .container .uk-grid>div .payment-container .underRow .content .uk-grid>div .contact p i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.shipping-payment .container .uk-grid>div .shipping-container .underRow .content .uk-grid>div .contact p a, :where(html.rf-on) section.shipping-payment .container .uk-grid>div .payment-container .underRow .content .uk-grid>div .contact p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.shipping-payment .container .uk-grid>div .shipping-container .underRow .content .uk-grid>div .contact p a i, :where(html.rf-on) section.shipping-payment .container .uk-grid>div .payment-container .underRow .content .uk-grid>div .contact p a i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.shipping-payment .container .uk-grid>div .shipping-container .underRow .content .uk-grid>div .contact p a span, :where(html.rf-on) section.shipping-payment .container .uk-grid>div .payment-container .underRow .content .uk-grid>div .contact p a span {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.signPack .container .top p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.signPack .container .form form .row p a {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) section.signPack .container .form form .row .facebook {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) section.lostPassword .container form .row fieldset .mdi {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.lostPassword .container form .row fieldset label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) section.grader .container .graderPack .uk-grid>div .uk-slider .uk-slider-items li .graderBox form .number .number-input .buttons button {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) body section.form .contactPersonPanel .about .perex {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body section.form .contactPersonPanel .about a.next-link {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .atr>span+span::before {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .atr.atr--features {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .buyPanel__reserve .reoReservation-open {
+    color: var(--rf-green-ink) !important
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .catalogSheet .catalogSheet__button {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .buyPanel__watch .watch {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .buyPanel__state {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .buyPanel__price .blurPrice {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .buyPanel__perMeter {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .buyPanel__monthly .note {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .buyPanel__broker .buyPanel__brokerPhoto.is-initials {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .buyPanel__broker .buyPanel__brokerText .label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .unitSaves .unitSave {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .text .unitSaves .unitSave.active {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .buyPanel__addons li.is-included {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .buyPanel__addonName::before {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .buyPanel__addons li.is-included .buyPanel__addonName::before {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body.frontend-reounit section.pageTopPanel .container .uk-grid>div .buyPanel__addonNote {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body .flatCard .title p {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body .flatCard .title p span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body .flatCard .price span {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body .flatCard .cardFoot>a.button:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body .unitsTableSection .unitsTable .tHead .unitTableSort i {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body .unitsTableSection .unitsTable .tHead .unitTableSort[data-sort-direction] i {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body .layoutSide .filterOpen {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .filterModal .filterModal__reset:hover, :where(html.rf-on) .filterModal .filterModal__reset:focus-visible {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body .layoutMain .resultBar .resultBar__count {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body .layoutMain .resultBar .shareToggle {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body .layoutMain .resultBar .viewToggle .viewToggle__option {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body .layoutMain .resultBar .viewToggle .viewToggle__option.active {
+    color: var(--rf-on-green)
+}
+:where(html.rf-on) .floorPreview .floorPreview__label {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.brokerOffer .form .submitPack input[type="submit"] {
+    color: var(--rf-green-ink) !important
+}
+:where(html.rf-on) body.frontend-reounit section.brokerOffer .form .submitPack:hover input[type="submit"] {
+    color: var(--rf-on-green) !important
+}
+:where(html.rf-on) body.frontend-reounit section.brokerOffer .colleagueBox .about .perex {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.brokerOffer .colleagueBox .about a.next-link {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body.frontend-reounit section.brokerOffer .colleagueBox .about a.next-link:hover {
+    color: var(--rf-green-ink)
+}
+:where(html.rf-on) body.frontend-reounit section.unitDetail .container .content .uk-grid>div .unitRooms__table thead th {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.unitDetail .container .content .uk-grid>div .unitRooms__code {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.unitDetail .container .content .uk-grid>div .unitRooms__extra th, :where(html.rf-on) body.frontend-reounit section.unitDetail .container .content .uk-grid>div .unitRooms__extra td {
+    color: var(--rf-muted)
+}
+:where(html.rf-on) body.frontend-reounit section.unitDetail .container .content .uk-grid>div .unitRooms__note {
+    color: var(--rf-muted)
 }
 
 /* ---- 90-footer.css ---- */
