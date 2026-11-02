@@ -643,6 +643,51 @@
 	// „Pohled 360°“ a nápověda s prstem; po zásahu uživatele se zastaví, po chvíli zase
 	// rozjede. Instanci prohlížeče zpřístupní build (tools/panorama-pois.mjs → t.__psv).
 	var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	// Panoráma: štítek projektu jako na 2D mapě (logo, adresa, Navigovat — data z karty
+	// projektu v mapě) a na Lokalitě filtr bodů podle stejných kategorií jako legenda mapy.
+	var POI_CAT = { 'Občanská vybavenost': /bus-stop|school|teddy|store|cart|pill|hospital|pharmacy/, 'Aktivity v okolí': /silverware|church|coffee|food|theater/, 'Sportoviště': /basketball|soccer|run|dumbbell|weight|bike|swim|tennis/, 'Přírodní zajímavosti': /tree|pine|flower|nature|park|water/ };
+	var projectCard = null;
+	function getProjectCard() {
+		if (!projectCard) projectCard = fetch(BASE + '/_data/do-map-main-markers.json', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : []; }).then(function (list) {
+			var m = (list || []).find(function (x) { return !x.categories || !x.categories.length; });
+			return m && m.content ? m.content : null;
+		}).catch(function () { return null; });
+		return projectCard;
+	}
+	function panoEnhance(sec, v) {
+		var mk = v.getPlugin && v.getPlugin('markers');
+		if (!mk) return;
+		getProjectCard().then(function (card) {
+			if (!card) return;
+			mk.getMarkers().forEach(function (m) {
+				if (!m.config || !m.config.data || m.config.data.kind !== 'complex') return;
+				var W = 300, H = 184, TAIL = 44;
+				mk.updateMarker({ id: m.id, html: '<div class="qtip-content panoramaComplexTip rfComplexCard">' + card + '</div>', size: { width: W, height: H }, anchor: { x: 0, y: (H + TAIL) / H } });
+			});
+		});
+		if (!sec.closest('.rfPanoSection') || sec.querySelector('.rfPanoLegend')) return;
+		var cats = Object.keys(POI_CAT), byCat = {};
+		mk.getMarkers().forEach(function (m) {
+			if (!m.config || !m.config.data || m.config.data.kind !== 'poi') return;
+			var ic = (String(m.config.html || '').match(/mdi-[a-z-]+/) || [''])[0];
+			var c = cats.find(function (k) { return POI_CAT[k].test(ic); }) || cats[0];
+			(byCat[c] = byCat[c] || []).push(m.id);
+		});
+		// ikony kategorií převzaté z legendy 2D mapy šablony
+		var legend = document.querySelector('[data-map-legend]');
+		var icon = function (name) { var l = legend && Array.prototype.find.call(legend.querySelectorAll('label'), function (x) { return x.textContent.replace(/\s+/g, ' ').trim() === name; }); /* šablona píše nezlomitelné mezery */ var im = l && l.querySelector('img'); return im ? '<img src="' + im.getAttribute('src') + '" alt="">' : ''; };
+		var box = el('div', 'rfPanoLegend'); // bez třídy legend — pravidla šablony by přidala druhou fajfku
+		box.innerHTML = cats.filter(function (c) { return byCat[c]; }).map(function (c, i) {
+			return '<p><input type="checkbox" id="rf-pl-' + i + '" value="' + c + '" checked><label for="rf-pl-' + i + '">' + icon(c) + c + '</label></p>';
+		}).join('');
+		sec.appendChild(box);
+		box.addEventListener('change', function (e) {
+			var c = e.target && e.target.value;
+			(byCat[c] || []).forEach(function (id) { e.target.checked ? mk.showMarker(id) : mk.hideMarker(id); });
+		});
+		['pointerdown', 'wheel', 'touchstart'].forEach(function (ev) { box.addEventListener(ev, function (e) { e.stopPropagation(); }); });
+	}
 	function panoAttract(scope) {
 		(scope || document).querySelectorAll('section.panoramaHero[data-panorama-hero]').forEach(function (sec) {
 			var el = sec.querySelector('[data-panorama-viewer]');
@@ -675,7 +720,7 @@
 			(function wait(n) {
 				if (el.__psv) {
 					v = el.__psv;
-					var go = function () { pausedUntil = performance.now() + 800; requestAnimationFrame(tick); };
+					var go = function () { pausedUntil = performance.now() + 800; requestAnimationFrame(tick); try { panoEnhance(sec, v); } catch (e) {} };
 					v.state && v.state.ready ? go() : v.addEventListener('ready', go, { once: true });
 				} else if (n < 200) setTimeout(function () { wait(n + 1); }, 100);
 			})(0);
