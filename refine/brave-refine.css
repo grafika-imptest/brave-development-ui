@@ -4332,6 +4332,14 @@ html.rf-on .rfHouseOutline polygon {
 		padding-bottom: 20px;
 	}
 }
+@media (min-width: 1200px) {
+	/* skupina Seřadit má od šablony stín a průsvitné pozadí — v liště jako ostatní čipy */
+	html.rf-on .rfFilterBar form.sortGroup.rfChipGroup {
+		box-shadow: none !important;
+		background: none !important;
+		backdrop-filter: none !important;
+	}
+}
 
 /* ---- 86-contrast.css ---- */
 /* GENEROVÁNO tools/contrast-css.mjs — needitovat ručně.
