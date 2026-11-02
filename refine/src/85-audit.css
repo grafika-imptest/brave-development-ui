@@ -1981,3 +1981,19 @@ html.rf-on .rfPanoLegend label::before {
 	color: transparent !important;
 	font-size: 0 !important;
 }
+/* štítek projektu v panoramatu: logo zarovnané s textem, ocásek navazuje na zelený pruh */
+html.rf-on .rfComplexCard .addressCard {
+	border-left: 0;
+}
+html.rf-on .rfComplexCard .addressCard .logo img {
+	width: auto;
+	height: 30px;
+	max-height: none;
+}
+html.rf-on section.panoramaHero .panoramaComplexTip.rfComplexCard::before {
+	left: -4px;
+	top: 100%;
+}
+html.rf-on section.panoramaHero .panoramaComplexTip.rfComplexCard::after {
+	top: 100%;
+}
