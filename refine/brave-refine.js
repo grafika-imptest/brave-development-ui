@@ -12,6 +12,43 @@
 	if (root.classList.contains('refine-off')) return;
 	root.classList.add('rf-on');
 
+	/* Oblasti pater ve vizualizaci domu (originální pixely 1600 × 800) podle skutečných
+	   hran stropů — v datech šablony je horní ustoupené patro přes celou šířku domu
+	   a přízemí přesahuje do zeleně. Musí se přepsat hned (před přepočtem šablony
+	   na DOMContentLoaded), proto mimo ready(). Klíč = adresa patra. */
+	var FLOOR_SHAPES = {
+		'20260831070015086': {
+			'dum-a-4-np': '252,286,705,286,705,344,252,344',
+			'dum-a-3-np': '185,344,737,344,737,414,185,414',
+			'dum-a-2-np': '185,414,737,414,737,477,185,477',
+			'dum-a-1-np': '185,477,737,477,737,537,185,537',
+			'dum-b-6-np': '892,255,1273,255,1273,303,892,303',
+			'dum-b-5-np': '849,303,1326,303,1326,355,849,355',
+			'dum-b-4-np': '849,355,1326,355,1326,405,849,405',
+			'dum-b-3-np': '849,405,1326,405,1326,456,849,456',
+			'dum-b-2-np': '849,456,1326,456,1326,506,849,506',
+			'dum-b-1-np': '849,506,1326,506,1326,556,849,556'
+		}
+	};
+	function imgKey(img) { return (img.getAttribute('src') || '').replace(/^.*\/(\d{10,})[^/]*$/, '$1'); }
+	function floorKey(a) { return ((a.getAttribute('href') || '').match(/\/([^/?#]+)\/?(?:[?#].*)?$/) || [])[1] || ''; }
+	function fixFloorAreas() {
+		if (root.classList.contains('refine-off')) return;
+		document.querySelectorAll('img.map[usemap]').forEach(function (img) {
+			var shapes = FLOOR_SHAPES[imgKey(img)];
+			var map = shapes && document.querySelector('map[name="' + img.getAttribute('usemap').replace('#', '') + '"]');
+			if (!map) return;
+			map.querySelectorAll('area').forEach(function (a) {
+				var c = shapes[floorKey(a)];
+				if (!c) return;
+				a.setAttribute('data-rf-coords', c);
+				a.setAttribute('coords', c);
+				if (window.jQuery) window.jQuery(a).data('coords', c); // originál pro přepočet šablony
+			});
+		});
+	}
+	fixFloorAreas();
+
 	function ready(fn) {
 		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
 		else fn();
@@ -198,8 +235,8 @@
 	var SILHOUETTES = {
 		// vizualizace Bytový komplex Hálkova (1600 × 800): Dům A, Dům B
 		'20260831070015086': [
-			'185,536 185,344 252,344 252,286 705,286 705,344 737,344 737,536',
-			'850,540 850,302 892,302 892,253 1273,253 1273,302 1326,302 1326,540'
+			'185,537 185,344 252,344 252,286 705,286 705,344 737,344 737,537',
+			'849,556 849,303 892,303 892,255 1273,255 1273,303 1326,303 1326,556'
 		]
 	};
 	function houseOutline() {
@@ -223,7 +260,7 @@
 			var boxes = {};
 			map.querySelectorAll('area').forEach(function (a) {
 				var key = ((a.getAttribute('href') || '').match(/dum-([a-z0-9]+)-/i) || [])[1] || 'x';
-				var c = (a.getAttribute('coords') || '').split(',').map(Number);
+				var c = String(a.getAttribute('data-rf-coords') || (window.jQuery && window.jQuery(a).data('coords')) || a.getAttribute('coords') || '').split(',').map(Number);
 				if (c.length < 4) return;
 				var b = boxes[key] = boxes[key] || { x1: Infinity, y1: Infinity, x2: -Infinity, y2: -Infinity };
 				for (var i = 0; i + 1 < c.length; i += 2) {
@@ -676,7 +713,8 @@
 		if (!map || !side || side.querySelector('.rfMiniViz')) return;
 		var W = +img.getAttribute('width') || 1600, H = +img.getAttribute('height') || 800;
 		var polys = Array.prototype.map.call(map.querySelectorAll('area'), function (a) {
-			var c = (a.getAttribute('coords') || '').split(',').map(Number), pts = [];
+			var orig = a.getAttribute('data-rf-coords') || (window.jQuery && window.jQuery(a).data('coords')) || a.getAttribute('coords') || '';
+			var c = String(orig).split(',').map(Number), pts = [];
 			for (var i = 0; i + 1 < c.length; i += 2) pts.push(c[i] + ',' + c[i + 1]);
 			return '<a href="' + (a.getAttribute('href') || '#') + '" data-part="' + (a.getAttribute('data-part-id') || '') + '" aria-label="' + (a.getAttribute('alt') || a.getAttribute('title') || 'Patro') + '"><polygon points="' + pts.join(' ') + '"/></a>';
 		}).join('');
