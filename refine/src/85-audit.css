@@ -1831,14 +1831,6 @@ html.rf-on section.mapContent.rfMapView [data-map-filter] {
 	}
 }
 
-/* --- Mapy: podklad do zelena podle barev webu (místo šedi šablony) ---------- */
-html.rf-on :is(section.mapContent, section.topContact, section.homepageInteractive, .rfMapView, .mapBox) [data-map-id] .leaflet-tile-pane {
-	filter: grayscale(1) sepia(0.55) hue-rotate(80deg) saturate(1.35) brightness(1.04) contrast(0.9) !important;
-}
-html.rf-on :is(section.mapContent, section.topContact, section.homepageInteractive, .rfMapView) [data-map-id] {
-	background: #e8f1ec;
-}
-
 /* --- Legenda mapy: jedno čisté zaškrtávací políčko --------------------------- */
 html.rf-on .mapWrapper .legend p label::after {
 	content: none !important;
