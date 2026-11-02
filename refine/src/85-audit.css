@@ -1744,3 +1744,134 @@ html.rf-on .rfHouseOutline polygon {
 		backdrop-filter: none !important;
 	}
 }
+
+/* --- Lokalita: přepínač Pohled 360° / Mapa 2D (JS: lokalitaPanorama) --------- */
+html.rf-on .rfPanoSection__head {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	column-gap: 32px;
+	align-items: end;
+}
+html.rf-on .rfPanoSection__head > :not(.rfViewSwitch) {
+	grid-column: 1;
+}
+html.rf-on .rfViewSwitch {
+	grid-column: 2;
+	grid-row: 1 / span 3;
+	align-self: end;
+	display: inline-flex;
+	gap: 4px;
+	padding: 4px;
+	border: 1px solid var(--rf-line-strong);
+	border-radius: 999px;
+	background: var(--rf-surface);
+}
+html.rf-on .rfViewSwitch button {
+	height: 44px;
+	padding: 0 22px;
+	border: 0;
+	border-radius: 999px;
+	background: transparent;
+	color: var(--rf-ink-2);
+	font: 500 1.5rem/1 Poppins, system-ui, sans-serif;
+	cursor: pointer;
+	transition: background-color var(--rf-dur), color var(--rf-dur);
+}
+html.rf-on .rfViewSwitch button:hover {
+	color: var(--rf-ink);
+}
+html.rf-on .rfViewSwitch button[aria-pressed="true"] {
+	background: var(--rf-green-ink);
+	color: #fff;
+}
+html.rf-on section.mapContent.rfMapView {
+	position: relative;
+	margin: 0;
+	padding: 0;
+	border-radius: var(--rf-radius-lg);
+	overflow: hidden;
+	isolation: isolate;
+}
+html.rf-on section.mapContent.rfMapView > .container,
+html.rf-on section.mapContent.rfMapView .mapWrapper {
+	max-width: none;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+}
+html.rf-on section.mapContent.rfMapView .mapWrapper > [data-map-id] {
+	height: min(78vh, 820px) !important;
+	min-height: 460px;
+	border-radius: var(--rf-radius-lg);
+}
+html.rf-on .rfMapView[hidden],
+html.rf-on .rfPanoSection section.panoramaHero[hidden] {
+	display: none !important;
+}
+html.rf-on section.mapContent.rfMapView [data-map-filter] {
+	display: none !important;
+}
+@media (max-width: 767px) {
+	html.rf-on .rfPanoSection__head {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	html.rf-on .rfViewSwitch {
+		grid-column: 1;
+		grid-row: auto;
+		justify-self: start;
+		margin-top: 18px;
+	}
+	html.rf-on section.mapContent.rfMapView,
+	html.rf-on section.mapContent.rfMapView .mapWrapper > [data-map-id] {
+		border-radius: 0;
+	}
+	html.rf-on section.mapContent.rfMapView .mapWrapper > [data-map-id] {
+		height: 60svh !important;
+		min-height: 380px;
+	}
+}
+
+/* --- Mapy: podklad do zelena podle barev webu (místo šedi šablony) ---------- */
+html.rf-on :is(section.mapContent, section.topContact, section.homepageInteractive, .rfMapView, .mapBox) [data-map-id] .leaflet-tile-pane {
+	filter: grayscale(1) sepia(0.55) hue-rotate(80deg) saturate(1.35) brightness(1.04) contrast(0.9) !important;
+}
+html.rf-on :is(section.mapContent, section.topContact, section.homepageInteractive, .rfMapView) [data-map-id] {
+	background: #e8f1ec;
+}
+
+/* --- Legenda mapy: jedno čisté zaškrtávací políčko --------------------------- */
+html.rf-on .mapWrapper .legend p label::after {
+	content: none !important;
+	display: none !important;
+}
+html.rf-on .mapWrapper .legend p label::before,
+html.rf-on .rfMapView .legend p label::before {
+	content: "" !important;
+	flex: none;
+	width: 20px !important;
+	height: 20px !important;
+	margin-right: 12px;
+	border: 1.5px solid var(--rf-line-strong) !important;
+	border-radius: 6px !important;
+	background: #fff no-repeat center / 12px 12px !important;
+	box-shadow: none !important;
+	transition: background-color var(--rf-dur), border-color var(--rf-dur);
+}
+html.rf-on .mapWrapper .legend p input:checked + label::before,
+html.rf-on .rfMapView .legend p input:checked + label::before {
+	border-color: var(--rf-green-ink) !important;
+	background-color: var(--rf-green-ink) !important;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.2 6.3 4.8 8.8 9.8 3.4' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+}
+html.rf-on .mapWrapper .legend p label,
+html.rf-on .rfMapView .legend p label {
+	display: inline-flex !important;
+	align-items: center;
+	gap: 0;
+	cursor: pointer;
+}
+html.rf-on .mapWrapper .legend p input:focus-visible + label::before,
+html.rf-on .rfMapView .legend p input:focus-visible + label::before {
+	outline: 2px solid var(--rf-green-ink);
+	outline-offset: 2px;
+}
