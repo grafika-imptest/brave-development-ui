@@ -632,7 +632,7 @@ html.rf-on .rfHouseOutline {
 	pointer-events: none;
 	overflow: visible;
 }
-html.rf-on .rfHouseOutline rect {
+html.rf-on .rfHouseOutline :is(rect, polygon) {
 	fill: rgb(66 199 135 / 0.14);
 	stroke: #42c787;
 	stroke-width: 4;
@@ -645,12 +645,12 @@ html.rf-on .rfHouseOutline rect {
 	50% { fill: rgb(66 199 135 / 0.26); stroke-opacity: 1; }
 }
 /* po prvním najetí převezme zvýraznění pater šablona */
-html.rf-on .maping.rf-touched .rfHouseOutline rect {
+html.rf-on .maping.rf-touched .rfHouseOutline :is(rect, polygon) {
 	animation: none;
 	opacity: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-	html.rf-on .rfHouseOutline rect {
+	html.rf-on .rfHouseOutline :is(rect, polygon) {
 		animation: none;
 		fill: rgb(66 199 135 / 0.16);
 	}
@@ -707,4 +707,787 @@ html.rf-on section.form.rfLead .container > .content {
 }
 html.rf-on section.form.rfLead .container > .content > div {
 	align-items: center;
+}
+
+/* ==========================================================================
+   Výpis bytů (JS: listingLayout, stateAtPrice)
+   ≥ 1200 px: vlevo zafixovaná fotka domu + velký půdorys patra, vpravo
+   zafixovaná lišta filtrů (čipy s nabídkami) a výpis. Drátěné modely pryč.
+   ========================================================================== */
+html.rf-on .rf-hidden {
+	display: none !important;
+}
+html.rf-on.rf-listing .unitsLayout .layoutSide > .wireframe {
+	display: none !important;
+}
+
+@media (min-width: 1200px) {
+	/* kompaktní hlavička stránky */
+	html.rf-on.rf-listing .projectListTitle,
+	html.rf-on.rf-listing section.projectListTitle {
+		padding-bottom: 0;
+		margin-bottom: 0;
+	}
+	html.rf-on.rf-listing .unitsLayout {
+		padding-top: 8px;
+	}
+	html.rf-on.rf-listing .unitsLayout .layoutGrid {
+		grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
+		grid-template-areas: "side main";
+		gap: 0 clamp(24px, 2.4vw, 44px);
+	}
+	html.rf-on.rf-listing .unitsLayout .layoutGrid > .layoutSide {
+		top: calc(var(--rf-nav-offset) + 16px);
+		max-height: calc(100vh - var(--rf-nav-offset) - 32px);
+		overflow: visible;
+		transition: top var(--rf-dur-slow) var(--rf-ease-out);
+	}
+	html.rf-on.rf-listing .layoutSide > .filterOpen {
+		display: none;
+	}
+
+	/* levý panel: fotka + půdorys stejně široké, dohromady na výšku obrazovky */
+	html.rf-on .rfListVisual {
+		display: grid;
+		gap: 14px;
+	}
+	html.rf-on .rfListVisual > .layoutViz,
+	html.rf-on .rfListVisual section.vizualize,
+	html.rf-on .rfListVisual section.vizualize .container {
+		width: 100%;
+		max-width: none;
+		margin: 0;
+		padding: 0;
+	}
+	html.rf-on .rfListVisual section.vizualize .container > .top,
+	html.rf-on .rfListVisual section.vizualize .rfVizHint {
+		display: none;
+	}
+	html.rf-on .rfListVisual section.vizualize .maping {
+		border-radius: var(--rf-radius-lg);
+		overflow: hidden;
+	}
+	html.rf-on .rfListVisual section.vizualize .maping::after {
+		display: none;
+	}
+	html.rf-on .rfListVisual .floorPreview {
+		display: block !important;
+		margin: 0;
+		padding: 16px 18px 18px;
+		border: 1px solid var(--rf-line);
+		border-radius: var(--rf-radius-lg);
+		background: var(--rf-surface);
+	}
+	html.rf-on .rfListVisual .floorPreview[hidden] {
+		display: block !important;
+	}
+	html.rf-on .rfListVisual .floorPreview__label {
+		margin: 0 0 10px;
+		font: 600 1.3rem/1.3 Poppins, system-ui, sans-serif;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--rf-ink-2);
+	}
+	html.rf-on .rfListVisual .floorPreview .frame {
+		width: 100%;
+		max-width: none;
+	}
+	html.rf-on .rfListVisual .floorPreview .frame img {
+		width: 100%;
+		height: auto;
+		max-height: calc(100vh - var(--rf-nav-offset) - 32px - 14px - 23vw * 0.5 - 70px);
+		object-fit: contain;
+	}
+
+	/* pravý sloupec: zafixovaná lišta filtrů nad výpisem */
+	html.rf-on .rfFilterBar {
+		position: sticky;
+		top: calc(var(--rf-nav-offset) + 8px);
+		z-index: 60;
+		margin: 0 0 20px;
+		padding: 12px 14px;
+		border: 1px solid var(--rf-line);
+		border-radius: var(--rf-radius-lg);
+		background: rgb(255 255 255 / 0.97);
+		box-shadow: var(--rf-shadow-sm);
+		backdrop-filter: blur(8px);
+		transition: top var(--rf-dur-slow) var(--rf-ease-out);
+	}
+	/* okno filtru šablony vložené do lišty: bez modálních vlastností */
+	html.rf-on .rfFilterBar > #reo-unit-filter-modal {
+		position: static !important;
+		display: block !important;
+		opacity: 1 !important;
+		inset: auto;
+		width: auto;
+		height: auto;
+		padding: 0 !important;
+		overflow: visible !important;
+		background: none !important;
+		transform: none !important;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal > .uk-modal-dialog {
+		position: static;
+		width: auto;
+		max-width: none;
+		min-height: 0;
+		margin: 0;
+		padding: 0;
+		background: none;
+		box-shadow: none;
+		transform: none !important;
+		opacity: 1 !important;
+		overflow: visible;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal :is(.uk-modal-close-full, .filterModal__head, .filterModal__foot, .filterModal__result) {
+		display: none !important;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal .filterModal__inner {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		padding: 0;
+		max-width: none;
+		overflow: visible;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal .filterModal__inner > div,
+	html.rf-on .rfFilterBar #reo-unit-filter-modal :is(.filter, .filter > div) {
+		display: contents;
+	}
+	html.rf-on .rfFilterBar #snippet--reoUnitSort {
+		order: 9;
+		margin-left: auto;
+	}
+	html.rf-on .rfFilterBar .filterPanel {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding: 0 !important;
+		border: 0 !important;
+		background: none !important;
+		box-shadow: none !important;
+	}
+	html.rf-on .rfFilterBar .filterPanel .filterRow {
+		display: contents !important;
+	}
+
+	/* skupina = čip + nabídka */
+	html.rf-on .rfFilterBar .rfChipGroup {
+		position: relative;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup > :not(.rfChip, input[type="hidden"]) {
+		display: none !important;
+	}
+	html.rf-on .rfChip {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		height: 40px;
+		padding: 0 14px;
+		border: 1px solid var(--rf-line-strong);
+		border-radius: 999px;
+		background: var(--rf-surface);
+		color: var(--rf-ink);
+		font: 500 1.4rem/1 Poppins, system-ui, sans-serif;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: border-color var(--rf-dur), background-color var(--rf-dur);
+	}
+	html.rf-on .rfChip::after {
+		content: "";
+		width: 6px;
+		height: 6px;
+		margin: -3px 0 0 2px;
+		border-right: 1.5px solid currentColor;
+		border-bottom: 1.5px solid currentColor;
+		transform: rotate(45deg);
+		transition: transform var(--rf-dur);
+	}
+	html.rf-on .rfChip:hover,
+	html.rf-on .rfChipGroup.is-open > .rfChip {
+		border-color: var(--rf-ink);
+	}
+	html.rf-on .rfChipGroup.is-open > .rfChip::after {
+		transform: rotate(-135deg);
+		margin-top: 3px;
+	}
+	html.rf-on .rfChip.is-active {
+		border-color: var(--rf-green-ink);
+		background: var(--rf-green-soft);
+	}
+	html.rf-on .rfChip__n {
+		display: inline-grid;
+		place-items: center;
+		min-width: 20px;
+		height: 20px;
+		padding: 0 6px;
+		border-radius: 999px;
+		background: var(--rf-green-ink);
+		color: #fff;
+		font-size: 1.15rem;
+	}
+	html.rf-on .rfChip__n[hidden] {
+		display: none;
+	}
+	/* otevřená nabídka */
+	html.rf-on .rfFilterBar .rfChipGroup.is-open {
+		z-index: 5;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > :not(.rfChip, input[type="hidden"], .filterLabel) {
+		display: block !important;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup.is-open::before {
+		content: "";
+		position: absolute;
+		top: calc(100% + 6px);
+		left: 0;
+		z-index: -1;
+		width: max(340px, 100%);
+		height: var(--rf-pop-h, 0);
+	}
+	html.rf-on .rfFilterBar .rfChipGroup.is-open {
+		--rf-pop-pad: 16px;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > .pills,
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > fieldset,
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > .filterBlock,
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > .sortGroup__row {
+		position: absolute;
+		left: 0;
+		top: calc(100% + 8px);
+		min-width: 340px;
+		max-width: 520px;
+		padding: var(--rf-pop-pad);
+		border: 1px solid var(--rf-line);
+		border-radius: var(--rf-radius-lg);
+		background: var(--rf-surface);
+		box-shadow: var(--rf-shadow-md);
+	}
+	/* Budova a patro: dva bloky pod sebou v jedné nabídce */
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > .filterBlock + .filterBlock {
+		top: calc(100% + 8px + var(--rf-b1, 96px));
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
+		border-top: 0;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > .filterBlock:first-of-type {
+		border-bottom-left-radius: 0;
+		border-bottom-right-radius: 0;
+		border-bottom: 0;
+		box-shadow: none;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup .filterBlock .filterLabel {
+		display: block !important;
+		margin: 0 0 8px;
+		font-size: 1.2rem;
+		color: var(--rf-muted);
+	}
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > fieldset {
+		min-width: 380px;
+		padding-top: 40px;
+		padding-bottom: 28px;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup.is-open .pills {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	html.rf-on .rfFilterBar__foot {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		margin-top: 10px;
+		padding-top: 10px;
+		border-top: 1px solid var(--rf-line);
+	}
+	html.rf-on .rfFilterBar__count {
+		margin: 0;
+		font: 400 1.4rem/1.3 Poppins, system-ui, sans-serif;
+		color: var(--rf-ink-2);
+	}
+	html.rf-on .rfFilterBar__reset {
+		margin-left: auto;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: var(--rf-green-ink);
+		font: 500 1.4rem/1.3 Poppins, system-ui, sans-serif;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+		cursor: pointer;
+	}
+	html.rf-on .rfFilterBar__reset[hidden] {
+		display: none;
+	}
+}
+
+/* --- Seznam bytů: stav u ceny (ne u názvu) ---------------------------------- */
+html.rf-on .tRow.rf-state-price .cName .unitStateDot {
+	display: none !important;
+}
+html.rf-on .tRow .cPrice {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 3px;
+}
+html.rf-on .rfState {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font: 500 1.2rem/1.2 Poppins, system-ui, sans-serif;
+	color: var(--rf-ink-2);
+	white-space: nowrap;
+}
+html.rf-on .rfState::before {
+	content: "";
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--rf-green);
+}
+html.rf-on .rfState.is-reserved::before {
+	background: #c77e1b;
+}
+html.rf-on .rfState.is-sold::before {
+	background: #c0392b;
+}
+
+/* lišta filtrů: všechny čipy v jedné řadě (zalomí se jen když nestačí šířka), řazení vpravo */
+@media (min-width: 1200px) {
+	html.rf-on .rfFilterBar .filterPanel {
+		display: contents !important;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup {
+		flex: none !important;
+		width: auto !important;
+		min-width: 0 !important;
+		max-width: none !important;
+	}
+	html.rf-on .rfFilterBar form.sortGroup {
+		order: 9;
+		margin-left: auto !important;
+	}
+	html.rf-on .rfFilterBar form.sortGroup.is-open > .sortGroup__row {
+		left: auto;
+		right: 0;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > .pills,
+	html.rf-on .rfFilterBar .rfChipGroup.is-open .pills {
+		display: flex !important;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup .pills > fieldset {
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+}
+@media (min-width: 1200px) {
+	html.rf-on .rfFilterBar .rfChipGroup.is-open .pills.pills {
+		display: flex !important;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup .pills.pills > fieldset {
+		display: block !important;
+		position: static !important;
+		width: auto !important;
+		min-width: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+		box-shadow: none !important;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup .rfChip {
+		width: auto !important;
+		min-width: 0 !important;
+		margin: 0 !important;
+	}
+	/* volby v nabídce: světlé pilulky, vybraná tmavě zelená */
+	html.rf-on .rfFilterBar .pill {
+		display: inline-flex;
+		align-items: center;
+		height: 36px;
+		padding: 0 14px;
+		border: 1px solid var(--rf-line-strong);
+		border-radius: 999px;
+		background: var(--rf-surface) !important;
+		color: var(--rf-ink) !important;
+		font: 500 1.4rem/1 Poppins, system-ui, sans-serif;
+		cursor: pointer;
+	}
+	html.rf-on .rfFilterBar .pill:hover {
+		border-color: var(--rf-ink);
+	}
+	html.rf-on .rfFilterBar input:checked + .pill,
+	html.rf-on .rfFilterBar .pill.active,
+	html.rf-on .rfFilterBar .pill.is-active,
+	html.rf-on .rfFilterBar button.pill[aria-pressed="true"] {
+		border-color: var(--rf-green-ink);
+		background: var(--rf-green-ink) !important;
+		color: #fff !important;
+	}
+	html.rf-on .rfFilterBar .pill[aria-disabled="true"],
+	html.rf-on .rfFilterBar fieldset.is-disabled .pill {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+}
+@media (min-width: 1200px) {
+	/* šablona skládá skupinu jako grid (popisek | volby) — v liště jen čip */
+	html.rf-on .rfFilterBar form.rfChipGroup {
+		display: block !important;
+		grid-template-columns: none !important;
+	}
+	html.rf-on .rfFilterBar .rfChipGroup > .rfChip {
+		display: inline-flex !important;
+	}
+}
+
+/* nabídka čipu = jedna karta (JS: .rfPop) */
+@media (min-width: 1200px) {
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > .rfPop {
+		position: absolute;
+		top: calc(100% + 8px);
+		left: 0;
+		display: grid !important;
+		gap: 16px;
+		width: max-content;
+		min-width: 300px;
+		max-width: 460px;
+		padding: 18px;
+		border: 1px solid var(--rf-line);
+		border-radius: var(--rf-radius-lg);
+		background: var(--rf-surface);
+		box-shadow: var(--rf-shadow-md);
+	}
+	html.rf-on .rfFilterBar .rfChipGroup.is-right > .rfPop {
+		left: auto;
+		right: 0;
+	}
+	html.rf-on .rfFilterBar .rfPop > .filterLabel {
+		display: none !important;
+	}
+	html.rf-on .rfFilterBar .rfPop .filterBlock {
+		position: static !important;
+		display: grid !important;
+		gap: 8px;
+		padding: 0 !important;
+		border: 0 !important;
+		box-shadow: none !important;
+	}
+	html.rf-on .rfFilterBar .rfPop .filterBlock .filterLabel {
+		display: block !important;
+		margin: 0;
+		font: 600 1.2rem/1.2 Poppins, system-ui, sans-serif;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--rf-muted);
+	}
+	html.rf-on .rfFilterBar .rfPop .pills {
+		display: flex !important;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	html.rf-on .rfFilterBar .rfPop .pills > * {
+		position: static !important;
+		width: auto !important;
+		min-width: 0 !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+	}
+	html.rf-on .rfFilterBar .rfPop :is(.pill, button[data-filter-building], button[data-filter-level]) {
+		display: inline-flex !important;
+		align-items: center;
+		justify-content: center;
+		height: 36px !important;
+		min-width: 0 !important;
+		padding: 0 14px !important;
+		border: 1px solid var(--rf-line-strong) !important;
+		border-radius: 999px !important;
+		background: var(--rf-surface) !important;
+		color: var(--rf-ink) !important;
+		font: 500 1.4rem/1 Poppins, system-ui, sans-serif !important;
+		cursor: pointer;
+	}
+	html.rf-on .rfFilterBar .rfPop :is(.pill, button[data-filter-building], button[data-filter-level]):hover {
+		border-color: var(--rf-ink) !important;
+	}
+	html.rf-on .rfFilterBar .rfPop :is(input:checked + .pill, .pill.active, .pill.is-active, button.is-active, button.active, button[aria-pressed="true"]) {
+		border-color: var(--rf-green-ink) !important;
+		background: var(--rf-green-ink) !important;
+		color: #fff !important;
+	}
+	html.rf-on .rfFilterBar .rfPop :is(.pill[aria-disabled="true"], fieldset.is-disabled .pill, button:disabled) {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	/* posuvníky plochy a ceny */
+	html.rf-on .rfFilterBar .rfPop > fieldset {
+		width: 340px;
+		margin: 0;
+		padding: 34px 12px 8px !important;
+		border: 0;
+	}
+}
+@media (min-width: 1200px) {
+	html.rf-on .rfFilterBar .rfPop > fieldset {
+		padding: 4px 10px 10px !important;
+	}
+	html.rf-on .rfFilterBar .rfPop .input-slider-width {
+		display: grid !important;
+		grid-template-columns: 1fr 1fr !important;
+		gap: 14px 12px;
+		width: 100%;
+	}
+	html.rf-on .rfFilterBar .rfPop .sliderTrack {
+		grid-column: 1 / -1;
+		width: auto !important;
+		margin: 4px 8px 0;
+	}
+	html.rf-on .rfFilterBar .rfPop .input-slider-width :is(.lower, .upper) {
+		gap: 6px;
+		color: var(--rf-ink) !important;
+		font: 500 1.4rem/1.3 Poppins, system-ui, sans-serif;
+	}
+	html.rf-on .rfFilterBar .rfPop .input-slider-width .upper {
+		justify-content: flex-end;
+	}
+	html.rf-on .rfFilterBar .rfPop .input-slider-width :is(.lower, .upper) .com {
+		color: var(--rf-muted) !important;
+	}
+	html.rf-on .rfFilterBar .rfPop .input-slider-width * {
+		color: inherit;
+	}
+}
+@media (min-width: 1200px) {
+	/* posuvník: hodnoty Od/Do nahoře vlevo a vpravo, dráha přes celou šířku pod nimi */
+	html.rf-on .rfFilterBar .rfPop .input-slider-width {
+		grid-template-columns: 1fr 1fr !important;
+		grid-template-areas: "lo hi" "track track";
+		color: var(--rf-ink) !important;
+	}
+	html.rf-on .rfFilterBar .rfPop .input-slider-width .lower { grid-area: lo; justify-content: flex-start; }
+	html.rf-on .rfFilterBar .rfPop .input-slider-width .upper { grid-area: hi; justify-content: flex-end; }
+	html.rf-on .rfFilterBar .rfPop .input-slider-width .sliderTrack { grid-area: track; grid-column: auto; }
+	html.rf-on .rfFilterBar .rfPop .input-slider-width :is(.lower, .upper),
+	html.rf-on .rfFilterBar .rfPop .input-slider-width :is(.value, .valueText, .unit, sup) {
+		color: var(--rf-ink) !important;
+		font-size: 1.5rem !important;
+		font-weight: 600;
+	}
+	html.rf-on .rfFilterBar .rfPop .input-slider-width .com {
+		color: var(--rf-muted) !important;
+		font-weight: 400;
+		text-transform: none;
+	}
+}
+/* Seznam v užším pravém sloupci: bez venkovní plochy a celkové výměry (jsou v detailu bytu) */
+@media (min-width: 1200px) {
+	html.rf-on.rf-listing .unitsTableSection .unitsTable {
+		--unit-cols: minmax(0, 1.25fr) minmax(0, 0.75fr) minmax(0, 0.7fr) minmax(0, 0.55fr) minmax(0, 0.65fr) minmax(0, 0.85fr) minmax(0, 1.45fr) 12.4rem;
+	}
+	html.rf-on.rf-listing .unitsTableSection .unitsTable .tRow :is(.cOutdoor, .cTotalArea) {
+		display: none !important;
+	}
+	html.rf-on.rf-listing .unitsTableSection .unitsTable .tRow .cName {
+		white-space: nowrap;
+	}
+	html.rf-on.rf-listing .unitsTableSection .unitsTable .tRow :is(.cBuilding, .cFloor) {
+		white-space: nowrap;
+	}
+}
+
+/* ==========================================================================
+   Panoráma: poznat na první pohled, že je interaktivní (JS: panoAttract)
+   ========================================================================== */
+html.rf-on .rfPanoBadge {
+	position: absolute;
+	top: 16px;
+	left: 16px;
+	z-index: 50;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 12px 7px 7px;
+	border-radius: 999px;
+	background: rgb(255 255 255 / 0.94);
+	box-shadow: var(--rf-shadow-sm);
+	font: 500 1.3rem/1 Poppins, system-ui, sans-serif;
+	color: var(--rf-ink);
+	pointer-events: none;
+}
+html.rf-on .rfPanoBadge b {
+	padding: 5px 8px;
+	border-radius: 999px;
+	background: var(--rf-green);
+	color: var(--rf-on-green);
+	font-weight: 700;
+}
+html.rf-on .rfPanoHint {
+	position: absolute;
+	left: 50%;
+	top: 24%;
+	z-index: 50;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	transform: translate(-50%, -50%);
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.6s var(--rf-ease-out);
+}
+html.rf-on .rf-pano-hint .rfPanoHint {
+	opacity: 1;
+}
+html.rf-on .rf-pano-used .rfPanoHint {
+	opacity: 0;
+	transition-duration: 0.35s;
+}
+html.rf-on .rfPanoHint__hand {
+	display: grid;
+	place-items: center;
+	width: 76px;
+	height: 76px;
+	border: 1px solid rgb(255 255 255 / 0.6);
+	border-radius: 50%;
+	background: rgb(255 255 255 / 0.2);
+	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
+	animation: rfPanoSwipe 2.6s var(--rf-ease-out) infinite;
+}
+html.rf-on .rfPanoHint__hand svg {
+	width: 38px;
+	height: 38px;
+	fill: none;
+	stroke: #fff;
+	stroke-width: 1.7;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.4));
+}
+html.rf-on .rfPanoHint__txt {
+	padding: 10px 14px;
+	border-radius: 999px;
+	background: rgb(17 17 17 / 0.75);
+	color: #fff;
+	font: 500 1.3rem/1 Poppins, system-ui, sans-serif;
+	white-space: nowrap;
+}
+@keyframes rfPanoSwipe {
+	0%, 100% { transform: translateX(-38px) rotate(-8deg); }
+	50% { transform: translateX(38px) rotate(8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+	html.rf-on .rfPanoHint__hand { animation: none; }
+}
+
+/* --- Panoráma na podstránce Lokalita (JS: lokalitaPanorama) ------------------- */
+html.rf-on section.rfPanoSection {
+	padding: var(--rf-section-y-sm) 0;
+}
+html.rf-on .rfPanoSection__head {
+	margin-bottom: var(--rf-head-gap);
+}
+html.rf-on .rfPanoSection__head .subtitle {
+	margin: 0 0 10px;
+	font: 700 1.3rem/1.3 Poppins, system-ui, sans-serif;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--rf-green-ink);
+}
+html.rf-on .rfPanoSection__head h2 {
+	margin: 0;
+	font: 600 3.75rem/1.18 Poppins, sans-serif;
+	letter-spacing: -0.01em;
+	color: var(--rf-ink);
+}
+html.rf-on .rfPanoSection__lead {
+	margin: 12px 0 0;
+	max-width: 62ch;
+	color: var(--rf-muted);
+}
+html.rf-on .rfPanoSection section.panoramaHero {
+	height: min(78vh, 820px);
+	min-height: 460px;
+	max-height: none;
+	border-radius: var(--rf-radius-lg);
+	isolation: isolate;
+}
+@media (max-width: 639px) {
+	html.rf-on .rfPanoSection__frame {
+		padding: 0;
+	}
+	html.rf-on .rfPanoSection section.panoramaHero {
+		height: 72svh;
+		min-height: 420px;
+		border-radius: 0;
+	}
+	html.rf-on .rfPanoHint__txt {
+		white-space: normal;
+		text-align: center;
+	}
+}
+
+/* --- Výpis 768–1199 px: zmenšená fotka s patry v zafixovaném sloupci (JS: listingMiniViz) */
+html.rf-on .rfMiniViz {
+	display: none;
+}
+@media (min-width: 768px) and (max-width: 1199px) {
+	html.rf-on .rfMiniViz {
+		display: block;
+		max-height: 0;
+		margin: 0;
+		opacity: 0;
+		overflow: hidden;
+		transform: translateY(-8px);
+		transition: max-height 0.45s var(--rf-ease-out), margin 0.45s var(--rf-ease-out), opacity 0.3s ease, transform 0.35s var(--rf-ease-out);
+	}
+	html.rf-on .rfMiniViz.is-on {
+		max-height: 60vw;
+		margin: 0 0 14px;
+		opacity: 1;
+		transform: none;
+	}
+	html.rf-on .rfMiniViz__frame {
+		position: relative;
+		border-radius: var(--rf-radius);
+		overflow: hidden;
+		box-shadow: var(--rf-shadow-sm);
+	}
+	html.rf-on .rfMiniViz__frame img {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	html.rf-on .rfMiniViz__frame svg {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+	}
+	html.rf-on .rfMiniViz polygon {
+		fill: transparent;
+		stroke: transparent;
+		stroke-width: 2;
+		vector-effect: non-scaling-stroke;
+		transition: fill 0.18s, stroke 0.18s;
+	}
+	html.rf-on .rfMiniViz a:hover polygon,
+	html.rf-on .rfMiniViz a.is-on polygon {
+		fill: rgb(66 199 135 / 0.45);
+		stroke: #42c787;
+	}
+}
+
+html.rf-on .rfHouseOutline polygon {
+	stroke-linejoin: round;
 }

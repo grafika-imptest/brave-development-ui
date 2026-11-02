@@ -83,3 +83,15 @@ export async function addPanoramaPois(OUT) {
 	await fs.writeFile(file, html.replace(re, (_, a, __, c) => a + JSON.stringify(pano) + c));
 	return pois.length;
 }
+
+// Zpřístupní instanci prohlížeče panoramatu (`viewer.__psv`) — originál tím nemění
+// chování, vrstva úprav ji používá k samorotaci. Idempotentní.
+export async function exposeViewer(OUT) {
+	const file = path.join(OUT, 'www', 'assets', 'panorama360.js');
+	let js;
+	try { js = await fs.readFile(file, 'utf8'); } catch { return false; }
+	if (js.includes('h = t.__psv = new sf({')) return true;
+	if (!js.includes('h = new sf({')) throw new Error('panorama360.js: nenalezena inicializace prohlížeče');
+	await fs.writeFile(file, js.replace('h = new sf({', 'h = t.__psv = new sf({'));
+	return true;
+}

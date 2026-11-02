@@ -19798,7 +19798,7 @@ F_.then(() => document.querySelectorAll("[data-panorama-hero]").forEach((e) => {
 		polygonStrokeWidth: l("--panorama-polygon-stroke-width", 2)
 	}, d = r.map((e) => R_(e, u)).filter(Boolean), f = (e, t) => e == null || e === "" ? t : Number(e), p = f(t?.dataset.panoramaYaw, -30);
 	if (!(!t || !t.dataset.panoramaSrc)) try {
-		let r = t.dataset.panoramaSrc, o = t.dataset.panoramaSrcPreview || r, c = t.dataset.panoramaSrcMobile, l = window.matchMedia("(max-width: 639px)"), u = l.matches && c ? c : o, m = Math.min(150, Math.max(36, f(t.dataset.panoramaMaxFov, 110))), h = new sf({
+		let r = t.dataset.panoramaSrc, o = t.dataset.panoramaSrcPreview || r, c = t.dataset.panoramaSrcMobile, l = window.matchMedia("(max-width: 639px)"), u = l.matches && c ? c : o, m = Math.min(150, Math.max(36, f(t.dataset.panoramaMaxFov, 110))), h = t.__psv = new sf({
 			container: t,
 			panorama: u,
 			navbar: !1,

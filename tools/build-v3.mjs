@@ -341,8 +341,8 @@ await fs.copyFile(path.join(ROOT, 'v3', 'src', 'v3.js'), path.join(OUT, 'assets'
 
 // Kopie panoramatu šablony, která zpřístupní instanci prohlížeče (pro jemnou samorotaci ve v3.js)
 const pano = await fs.readFile(path.join(ROOT, 'docs', 'www', 'assets', 'panorama360.js'), 'utf8');
-if (!pano.includes('h = new sf({') || !pano.includes('N_ = import.meta.url.slice(0, import.meta.url.lastIndexOf("/") + 1)')) throw new Error('panorama360.js: nenalezena inicializace prohlížeče');
-await fs.writeFile(path.join(OUT, 'assets', 'panorama360.js'), pano.replace('h = new sf({', 'h = t.__psv = new sf({')
+if (!/h = (t\.__psv = )?new sf\(\{/.test(pano) || !pano.includes('N_ = import.meta.url.slice(0, import.meta.url.lastIndexOf("/") + 1)')) throw new Error('panorama360.js: nenalezena inicializace prohlížeče');
+await fs.writeFile(path.join(OUT, 'assets', 'panorama360.js'), pano.replace(/h = (t\.__psv = )?new sf\(\{/, 'h = t.__psv = new sf({')
 	// styly prohlížeče zůstávají u originálu ve www/assets
 	.replace('N_ = import.meta.url.slice(0, import.meta.url.lastIndexOf("/") + 1)', 'N_ = new URL("../../www/assets/", import.meta.url).href'));
 await fs.writeFile(path.join(OUT, 'index.html'), html);

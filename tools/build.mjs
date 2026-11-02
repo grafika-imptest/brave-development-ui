@@ -9,7 +9,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { addPanoramaPois } from './panorama-pois.mjs';
+import { addPanoramaPois, exposeViewer } from './panorama-pois.mjs';
 import { createRewriter } from './lib-rewrite.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
@@ -59,6 +59,7 @@ if (process.argv.includes('--refine-only')) {
 	await fs.copyFile(path.join(ROOT, 'refine', 'brave-refine.js'), path.join(OUT, 'refine', 'brave-refine.js'));
 	await copyMedia();
 	console.log('panoráma: +' + await addPanoramaPois(OUT) + ' bodů zájmu');
+await exposeViewer(OUT);
 	console.log(`refine: ${parts.length} CSS částí (${(css.length / 1024).toFixed(1)} kB)`);
 	process.exit(0);
 }
@@ -116,6 +117,7 @@ await fs.writeFile(path.join(OUT, '.nojekyll'), '');
 await fs.writeFile(path.join(OUT, '404.html'),
 	`<!doctype html><meta charset="utf-8"><title>Stránka nenalezena</title><meta name="robots" content="noindex"><p style="font-family:sans-serif;padding:40px">Tato stránka není ve statickém náhledu. <a href="${BASE}/">Zpět na úvod</a></p>`);
 console.log('panoráma: +' + await addPanoramaPois(OUT) + ' bodů zájmu');
+await exposeViewer(OUT);
 console.log(`docs/: ${nPages} stránek, ${nAssets} souborů, ${nData} datových JSON, BASE=${BASE}`);
 
 // Volitelný lokální koncept V2 (není v repozitáři) — když existuje, složit ho znovu.
