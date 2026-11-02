@@ -195,7 +195,25 @@
 
 	// Vizualizace domu: pulzující obrys budov (obálka jejich pater z image mapy) — na první
 	// pohled je vidět, že je obrázek klikací. Při najetí myší obrys ustoupí, po odjetí pulzuje dál.
+	var SILHOUETTES = {
+		// vizualizace Bytový komplex Hálkova (1600 × 800): Dům A, Dům B
+		'20260831070015086': [
+			'185,536 185,344 252,344 252,286 705,286 705,344 737,344 737,536',
+			'850,540 850,302 892,302 892,253 1273,253 1273,302 1326,302 1326,540'
+		]
+	};
 	function houseOutline() {
+		// šablona přepočítá oblasti a zvýraznění pater jen při změně velikosti okna;
+		// fotka mění šířku i bez ní (přesun do sloupce, posuvník) → hlídat přímo obrázek
+		if ('ResizeObserver' in window) {
+			var rt, lastW = {};
+			var ro = new ResizeObserver(function (en) {
+				var changed = en.some(function (e, i) { var w = Math.round(e.contentRect.width); var k = e.target.src; var c = lastW[k] !== undefined && lastW[k] !== w; lastW[k] = w; return c; });
+				if (changed) { clearTimeout(rt); rt = setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 120); }
+			});
+			document.querySelectorAll('section.vizualize .maping img.map').forEach(function (i) { ro.observe(i); });
+		}
+
 		document.querySelectorAll('section.vizualize .maping').forEach(function (m) {
 			var img = m.querySelector('img[usemap]');
 			var map = img && document.querySelector('map[name="' + img.getAttribute('usemap').replace('#', '') + '"]');
@@ -213,10 +231,15 @@
 					b.y1 = Math.min(b.y1, c[i + 1]); b.y2 = Math.max(b.y2, c[i + 1]);
 				}
 			});
-			var rects = Object.keys(boxes).map(function (k, i) {
+			// Siluety domů (body v pixelech originálu vizualizace): ustoupená horní patra jsou
+			// užší než oblasti pater v image mapě → bez nich by obrys byl jen obdélník.
+			var sil = SILHOUETTES[(img.getAttribute('src') || '').replace(/^.*\/(\d{10,})[^/]*$/, '$1')];
+			var rects = (sil ? sil.map(function (pts, i) {
+				return '<polygon points="' + pts + '" style="animation-delay:' + (i * 0.35) + 's"/>';
+			}) : Object.keys(boxes).map(function (k, i) {
 				var b = boxes[k];
 				return '<rect x="' + b.x1 + '" y="' + b.y1 + '" width="' + (b.x2 - b.x1) + '" height="' + (b.y2 - b.y1) + '" rx="6" style="animation-delay:' + (i * 0.35) + 's"/>';
-			}).join('');
+			})).join('');
 			if (!rects) return;
 			m.insertAdjacentHTML('beforeend', '<svg class="rfHouseOutline" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' + rects + '</svg>');
 			// Při najetí obrys ustoupí zvýraznění pater šablony, po odjetí zase pulzuje
@@ -403,8 +426,281 @@
 		});
 	}
 
+	// Výpis bytů (desktop): vlevo zafixovaná fotka domu + velký půdorys patra (obojí se
+	// zvýrazňuje podle karty pod myší — logika šablony), vpravo zafixovaná lišta filtrů
+	// přímo na stránce (místo tlačítka a okna) a výpis. Drátěné modely pryč.
+	// Filtry počítají shodu z matice šablony (stejná data jako okno filtru) a výpis
+	// filtrují rovnou v prohlížeči; pod 1200 px zůstává tlačítko + okno šablony.
+	var mqWide = window.matchMedia('(min-width: 1200px)');
+	function listingLayout() {
+		var grid = document.querySelector('.unitsLayout .layoutGrid');
+		var modal = document.getElementById('reo-unit-filter-modal');
+		var main = grid && grid.querySelector(':scope > .layoutMain');
+		var side = grid && grid.querySelector(':scope > .layoutSide');
+		var viz = grid && grid.querySelector(':scope > .layoutViz');
+		var src = modal && modal.querySelector('script[data-reo-unit-filter-matrix]');
+		if (!grid || !modal || !main || !side || !src || document.querySelector('.rfFilterBar')) return;
+		var units = {};
+		try { (JSON.parse(src.textContent).units || []).forEach(function (u) { units[u.id] = u; }); } catch (e) { return; }
+		root.classList.add('rf-listing');
+
+		// --- rozvržení: vlevo fotka + půdorys, vpravo lišta filtrů + výpis
+		var visual = el('div', 'rfListVisual');
+		var preview = side.querySelector('.floorPreview');
+		var bar = el('div', 'rfFilterBar');
+		bar.setAttribute('role', 'search');
+		bar.setAttribute('aria-label', 'Filtr bytů');
+		var homeModal = modal.parentNode, homeNext = modal.nextSibling;
+		function place() {
+			if (mqWide.matches) {
+				if (visual.parentNode !== side) side.insertBefore(visual, side.firstChild);
+				if (viz && viz.parentNode !== visual) visual.insertBefore(viz, visual.firstChild);
+				if (preview && preview.parentNode !== visual) visual.appendChild(preview);
+				if (bar.parentNode !== main) main.insertBefore(bar, main.firstChild);
+				if (modal.parentNode !== bar) bar.insertBefore(modal, bar.firstChild);
+			} else {
+				if (viz && viz.parentNode !== grid) grid.insertBefore(viz, main);
+				if (preview && preview.parentNode !== side) side.appendChild(preview);
+				if (modal.parentNode !== homeModal) homeModal.insertBefore(modal, homeNext);
+			}
+			window.dispatchEvent(new Event('resize')); // image mapa přepočítá oblasti
+		}
+
+		// --- čipy filtrů (obsah = původní skupiny z okna šablony)
+		var groups = Array.prototype.slice.call(modal.querySelectorAll('form[data-filter-matrix-kind]'));
+		var sortForm = modal.querySelector('#snippet--reoUnitSort form');
+		function closeAll() {
+			modal.querySelectorAll('.rfChipGroup.is-open').forEach(function (f) { f.classList.remove('is-open'); f.querySelector('.rfChip').setAttribute('aria-expanded', 'false'); });
+		}
+		groups.concat(sortForm ? [sortForm] : []).forEach(function (form) {
+			if (form.querySelector('.rfChip')) return;
+			var labels = Array.prototype.map.call(form.querySelectorAll('.filterLabel'), function (l) { return l.textContent.trim(); });
+			var title = labels[0] + (labels[1] ? ' a ' + labels[1].toLowerCase() : '');
+			var chip = el('button', 'rfChip', '<span class="rfChip__t">' + title + '</span><span class="rfChip__n" hidden></span>');
+			chip.type = 'button';
+			chip.setAttribute('aria-expanded', 'false');
+			form.classList.add('rfChipGroup');
+			// obsah skupiny do jedné nabídky (prvky zůstávají ve formuláři → logika šablony beze změny)
+			var pop = el('div', 'rfPop');
+			Array.prototype.slice.call(form.childNodes).forEach(function (n) { if (!(n.nodeType === 1 && n.matches('input[type="hidden"]'))) pop.appendChild(n); });
+			form.appendChild(pop);
+			form.insertBefore(chip, form.firstChild);
+			chip.addEventListener('click', function (e) {
+				e.stopPropagation();
+				var open = !form.classList.contains('is-open');
+				closeAll();
+				form.classList.toggle('is-open', open);
+				chip.setAttribute('aria-expanded', String(open));
+				// nabídka u pravého okraje lišty se otevírá doleva
+				if (open) { var br = bar.getBoundingClientRect(), fr = form.getBoundingClientRect(); form.classList.toggle('is-right', fr.left + 360 > br.right); }
+			});
+		});
+		document.addEventListener('click', function (e) { if (!(e.target.closest && e.target.closest('.rfChipGroup'))) closeAll(); });
+		document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAll(); });
+
+		// --- vyhodnocení filtru nad maticí šablony
+		function checked(form) { return Array.prototype.map.call(form.querySelectorAll('input[type="checkbox"]:checked'), function (i) { return String(i.value); }); }
+		function hit(actual, sel) { var a = (Array.isArray(actual) ? actual : [actual]).map(String); return sel.some(function (v) { return a.indexOf(String(v)) >= 0; }); }
+		function num(f, sel) { var i = f.querySelector(sel); return i && i.value !== '' ? +i.value : NaN; }
+		function criteria() {
+			return groups.map(function (f) {
+				var kind = f.getAttribute('data-filter-matrix-kind'), opt = f.getAttribute('data-filter-matrix-option');
+				if (kind === 'or') return { kind: kind, opt: opt, min: num(f, '[data-reo-unit-filter-range-min]'), max: num(f, '[data-reo-unit-filter-range-max]'), lo: +(f.querySelector('[data-reo-unit-filter-range-min]') || {}).min, hi: +(f.querySelector('[data-reo-unit-filter-range-max]') || {}).max, form: f };
+				if (kind === 'pr') return { kind: kind, min: num(f, '[data-reo-unit-filter-price-min]'), max: num(f, '[data-reo-unit-filter-price-max]'), form: f };
+				return { kind: kind, opt: opt, sel: checked(f), form: f };
+			});
+		}
+		function match(u, cr) {
+			return cr.every(function (c) {
+				if (c.kind === 's') return c.sel.length ? hit(u.s, c.sel) : !u.sold;
+				if (c.kind === 'pp') return !c.sel.length || hit(u.pp || [], c.sel);
+				if (c.kind === 'os' || c.kind === 'ov') return !c.sel.length || hit((u[c.kind] || {})[c.opt] || [], c.sel);
+				if (c.kind === 'or') { if (!isFinite(c.min) || !isFinite(c.max)) return true; return ((u.ov || {})[c.opt] || []).some(function (v) { return +v >= c.min && +v <= c.max; }); }
+				if (c.kind === 'pr') { if (!isFinite(c.min) || !isFinite(c.max) || (!c.min && !c.max)) return true; return +u.price >= c.min && +u.price <= c.max; }
+				return true;
+			});
+		}
+		var foot = el('div', 'rfFilterBar__foot', '<p class="rfFilterBar__count"></p>');
+		var reset = el('button', 'rfFilterBar__reset', 'Zrušit filtry');
+		reset.type = 'button';
+		foot.appendChild(reset);
+		bar.appendChild(foot);
+		var count = foot.querySelector('.rfFilterBar__count');
+		var items = function () { return Array.prototype.slice.call(main.querySelectorAll('[data-unit-floor-id]')); };
+		var idOf = function (it) { var s = it.querySelector('[id^="snippet--reoUnitBox-"]'); return s ? +s.id.split('-').pop() : null; };
+		var cellOf = function (it) { return it.classList.contains('tRow') ? it : it.parentElement; };
+		var plural = function (n) { return n === 1 ? 'byt' : n >= 2 && n <= 4 ? 'byty' : 'bytů'; };
+		function apply() {
+			var cr = criteria(), n = 0;
+			Object.keys(units).forEach(function (id) { if (match(units[id], cr)) n++; });
+			items().forEach(function (it) { var u = units[idOf(it)]; cellOf(it).classList.toggle('rf-hidden', !!u && !match(u, cr)); });
+			count.innerHTML = '<strong>' + n + '</strong> ' + plural(n) + ' odpovídá výběru';
+			var rc = main.querySelector('.resultBar__count'); if (rc) rc.innerHTML = '<strong>' + n + '</strong> ' + plural(n);
+			var active = 0;
+			cr.forEach(function (c) {
+				var b = c.form.querySelector('.rfChip__n'); if (!b) return;
+				var k = c.sel ? c.sel.length : (c.kind === 'or' && isFinite(c.min) && (c.min > c.lo || c.max < c.hi)) ? 1 : 0;
+				b.hidden = !k; b.textContent = k; c.form.querySelector('.rfChip').classList.toggle('is-active', !!k); active += k;
+			});
+			reset.hidden = !active;
+		}
+		var t;
+		function later() { clearTimeout(t); t = setTimeout(apply, 80); }
+		['change', 'input', 'click'].forEach(function (ev) { modal.addEventListener(ev, later, true); });
+		reset.addEventListener('click', function () {
+			var r = modal.querySelector('[data-reo-unit-filter-reset]');
+			if (r) r.click();
+			modal.querySelectorAll('input[type="checkbox"]:checked').forEach(function (i) { i.checked = false; });
+			later();
+		});
+
+		// Řazení (čip „Seřadit“): bez načtení stránky, podle dat výpisu
+		if (sortForm) sortForm.addEventListener('change', function (e) {
+			var list = items();
+			if (!list.length) return;
+			var lab = e.target && e.target.id ? sortForm.querySelector('label[for="' + e.target.id + '"]') : null;
+			var txt = (lab || (e.target.closest('fieldset') || {}).querySelector && e.target.closest('fieldset').querySelector('label') || {}).textContent || '';
+			var fn = /Název/.test(txt) ? function (u, it) { return ((it.querySelector('h3, .cName a') || {}).textContent || '').trim(); } :
+				/Stav/.test(txt) ? function (u) { return u.sold ? 9 : u.s; } :
+				/Nejnižší/.test(txt) ? function (u) { return +u.price; } :
+				/Nejvyšší/.test(txt) ? function (u) { return -u.price; } : null;
+			var cells = list.map(function (it, i) { if (it.__rfOrder == null) it.__rfOrder = i; return { it: it, c: cellOf(it), u: units[idOf(it)] || {} }; });
+			cells.sort(function (a, b) {
+				var x = fn ? fn(a.u, a.it) : a.it.__rfOrder, y = fn ? fn(b.u, b.it) : b.it.__rfOrder;
+				return typeof x === 'string' ? x.localeCompare(y, 'cs', { numeric: true }) : x - y;
+			});
+			var parent = cells[0].c.parentNode;
+			cells.forEach(function (c) { parent.appendChild(c.c); });
+			sortForm.querySelectorAll('label').forEach(function (l) { l.classList.toggle('active', l === lab || l.textContent === txt); });
+			e.stopImmediatePropagation();
+			e.preventDefault();
+		}, true);
+
+		place();
+		mqWide.addEventListener ? mqWide.addEventListener('change', place) : mqWide.addListener(place);
+		apply();
+		// půdorys hned po načtení: patro prvního bytu ve výpisu (šablona ho plní až při najetí)
+		var first = items()[0];
+		if (first) setTimeout(function () { first.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); }, 400);
+	}
+
+	// Seznam bytů: stav (Volný / Rezervace / Prodáno) u ceny místo u názvu
+	function stateAtPrice() {
+		document.querySelectorAll('.tRow.tHead .cPrice').forEach(function (h) {
+			var t = h.querySelector('button') || h;
+			if (!/stav/i.test(t.textContent)) t.textContent = t.textContent.trim() + ' · stav';
+		});
+		document.querySelectorAll('.tRow[data-sort-state]').forEach(function (r) {
+			var price = r.querySelector('.cPrice');
+			if (!price || price.querySelector('.rfState')) return;
+			var dot = r.querySelector('.cName .unitStateDot');
+			var cls = dot ? (dot.className.match(/is-[a-z]+/) || [''])[0] : '';
+			price.insertAdjacentHTML('beforeend', '<span class="rfState ' + cls + '">' + r.getAttribute('data-sort-state') + '</span>');
+			r.classList.add('rf-state-price');
+		});
+	}
+
+	// Panoráma: na první pohled poznat, že je interaktivní — jemná samorotace, štítek
+	// „Pohled 360°“ a nápověda s prstem; po zásahu uživatele se zastaví, po chvíli zase
+	// rozjede. Instanci prohlížeče zpřístupní build (tools/panorama-pois.mjs → t.__psv).
+	var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	function panoAttract(scope) {
+		(scope || document).querySelectorAll('section.panoramaHero[data-panorama-hero]').forEach(function (sec) {
+			var el = sec.querySelector('[data-panorama-viewer]');
+			if (!el || sec.querySelector('.rfPanoHint')) return;
+			sec.insertAdjacentHTML('beforeend',
+				'<span class="rfPanoBadge" aria-hidden="true"><b>360°</b> Interaktivní pohled</span>' +
+				'<div class="rfPanoHint" aria-hidden="true"><span class="rfPanoHint__hand"><svg viewBox="0 0 32 32"><path d="M12.5 17.5V6.8a2 2 0 0 1 4 0v8.4m0-1.6v-1.4a2 2 0 0 1 4 0v2.2m0-.6a2 2 0 0 1 4 0v1.6m0 0a2 2 0 0 1 3.6-.9c.3.4.4.9.4 1.4v4.6c0 4.4-3.3 7.5-7.6 7.5h-1.6c-2.6 0-4.4-1.1-5.9-3.2l-4.1-5.9a2 2 0 0 1 3.1-2.5l1.9 2.1"/></svg></span>' +
+				'<span class="rfPanoHint__txt">Táhněte a rozhlédněte se po okolí</span></div>');
+			var hint = sec.querySelector('.rfPanoHint');
+			var SPEED = 0.06, IDLE = 5000; // rad/s (~3,4°/s)
+			var v = null, last = 0, pausedUntil = 0, visible = false, ramp = 0, shown = false;
+			function stop() {
+				pausedUntil = performance.now() + IDLE; ramp = 0;
+				sec.classList.add('rf-pano-used');
+			}
+			['pointerdown', 'wheel', 'touchstart', 'keydown'].forEach(function (e) { el.addEventListener(e, stop, { passive: true, capture: true }); });
+			if ('IntersectionObserver' in window) new IntersectionObserver(function (en) {
+				visible = en[0].isIntersecting;
+				if (visible && !shown) { shown = true; sec.classList.add('rf-pano-hint'); setTimeout(function () { sec.classList.add('rf-pano-used'); }, 9000); }
+			}, { threshold: 0.35 }).observe(el);
+			else visible = true;
+			function tick(t) {
+				requestAnimationFrame(tick);
+				var dt = last ? Math.min(0.05, (t - last) / 1000) : 0; last = t;
+				if (!v || reduceMotion || !visible || document.hidden || t < pausedUntil) return;
+				ramp = Math.min(1, ramp + dt / 1.5);
+				var p = v.getPosition();
+				v.rotate({ yaw: p.yaw + SPEED * ramp * dt, pitch: p.pitch });
+			}
+			(function wait(n) {
+				if (el.__psv) {
+					v = el.__psv;
+					var go = function () { pausedUntil = performance.now() + 800; requestAnimationFrame(tick); };
+					v.state && v.state.ready ? go() : v.addEventListener('ready', go, { once: true });
+				} else if (n < 200) setTimeout(function () { wait(n + 1); }, 100);
+			})(0);
+		});
+	}
+
+	// Podstránka Lokalita: panoráma s body zájmu nad mapou (panoráma i body převezme z homepage)
+	function lokalitaPanorama() {
+		var map = document.querySelector('section.mapContent');
+		if (!map || !/\/lokalita\/?$/.test(location.pathname) || document.querySelector('.rfPanoSection') || !window.fetch) return;
+		fetch(BASE + '/', { credentials: 'same-origin' }).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); }).then(function (html) {
+			var doc = new DOMParser().parseFromString(html, 'text/html');
+			var pano = doc.querySelector('section.panoramaHero[data-panorama-hero]');
+			if (!pano) return;
+			['.panoramaHero__quickSearch', '.panoramaHero__copy'].forEach(function (s) { var n = pano.querySelector(s); if (n) n.remove(); });
+			var wrap = el('section', 'rfPanoSection', '<div class="container rfPanoSection__head"><p class="subtitle">Pohled 360°</p>' +
+				'<h2>Rozhlédněte se po okolí</h2><p class="rfPanoSection__lead">Otočte pohledem a podívejte se, co všechno máte kolem domu. Najeďte na bod a uvidíte, jak daleko to je.</p></div><div class="container rfPanoSection__frame"></div>');
+			map.parentNode.insertBefore(wrap, map);
+			wrap.querySelector('.rfPanoSection__frame').appendChild(document.importNode(pano, true));
+			var s = document.createElement('script');
+			s.type = 'module';
+			s.src = BASE + '/www/assets/panorama360.js';
+			document.body.appendChild(s);
+			panoAttract(wrap);
+		}).catch(function () {});
+	}
+
+	// Výpis bytů 768–1199 px: když velká fotka domu odjede, objeví se její zmenšená verze
+	// v zafixovaném levém sloupci nad tlačítkem filtrů — patra jsou klikací a zvýrazňují
+	// se souběžně s kartou pod myší (stejné patro jako na velké fotce).
+	function listingMiniViz() {
+		var grid = document.querySelector('.unitsLayout .layoutGrid');
+		var side = grid && grid.querySelector(':scope > .layoutSide');
+		var viz = grid && grid.querySelector('.layoutViz');
+		var img = viz && viz.querySelector('.maping img[usemap]');
+		var map = img && document.querySelector('map[name="' + img.getAttribute('usemap').replace('#', '') + '"]');
+		if (!map || !side || side.querySelector('.rfMiniViz')) return;
+		var W = +img.getAttribute('width') || 1600, H = +img.getAttribute('height') || 800;
+		var polys = Array.prototype.map.call(map.querySelectorAll('area'), function (a) {
+			var c = (a.getAttribute('coords') || '').split(',').map(Number), pts = [];
+			for (var i = 0; i + 1 < c.length; i += 2) pts.push(c[i] + ',' + c[i + 1]);
+			return '<a href="' + (a.getAttribute('href') || '#') + '" data-part="' + (a.getAttribute('data-part-id') || '') + '" aria-label="' + (a.getAttribute('alt') || a.getAttribute('title') || 'Patro') + '"><polygon points="' + pts.join(' ') + '"/></a>';
+		}).join('');
+		var box = el('div', 'rfMiniViz');
+		box.innerHTML = '<div class="rfMiniViz__frame"><img src="' + (img.currentSrc || img.src) + '" alt="" width="' + W + '" height="' + H + '">' +
+			'<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' + polys + '</svg></div>';
+		side.insertBefore(box, side.firstChild);
+		var cur = null;
+		function mark(id) {
+			if (id === cur) return;
+			cur = id;
+			box.querySelectorAll('a[data-part]').forEach(function (a) { a.classList.toggle('is-on', !!id && a.getAttribute('data-part') === id); });
+		}
+		document.addEventListener('mouseover', function (e) {
+			var c = e.target.closest && e.target.closest('[data-unit-floor-id]');
+			if (c) mark(c.getAttribute('data-unit-floor-id'));
+		});
+		if ('IntersectionObserver' in window) {
+			new IntersectionObserver(function (en) { box.classList.toggle('is-on', !en[0].isIntersecting && !mqWide.matches); }, { rootMargin: '-20% 0px 0px 0px' }).observe(viz);
+		}
+	}
+
 	function audit() {
-		[videoHero, localityIcons, buildingFilter, heroSearch, mobileActions, houseViz, houseOutline, langToggle, decimals, leadBlock].forEach(function (fn) {
+		[videoHero, localityIcons, buildingFilter, heroSearch, mobileActions, houseViz, houseOutline, listingLayout, listingMiniViz, stateAtPrice, panoAttract, lokalitaPanorama, langToggle, decimals, leadBlock].forEach(function (fn) {
 			try { fn(); } catch (e) { if (window.console) console.warn('brave-refine:', e); }
 		});
 		// výpis jednotek se dotahuje AJAXem (filtr, stránkování) → čísla i v nových dlaždicích
