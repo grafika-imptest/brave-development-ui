@@ -1718,3 +1718,21 @@ html.rf-on .rfHouseOutline polygon {
 		padding: 0 8px !important;
 	}
 }
+
+/* Výpis ≥1200 px: nadpis stránky zarovnaný vlevo s fotkou domu (šablona ho odsazuje o šířku bočního panelu) */
+@media (min-width: 1200px) {
+	html.rf-on.rf-listing section.projectListTitle .container {
+		grid-template-columns: minmax(0, 1fr) !important;
+	}
+	html.rf-on.rf-listing section.projectListTitle .container > :not(.text) {
+		display: none;
+	}
+	html.rf-on.rf-listing section.projectListTitle .container > .text {
+		grid-column: 1 / -1;
+	}
+}
+@media (min-width: 1200px) {
+	html.rf-on.rf-listing section.projectListTitle .container > .text {
+		padding-bottom: 20px;
+	}
+}
