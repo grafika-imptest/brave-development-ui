@@ -694,7 +694,29 @@
 			var wrap = el('section', 'rfPanoSection', '<div class="container rfPanoSection__head"><p class="subtitle">Pohled 360°</p>' +
 				'<h2>Rozhlédněte se po okolí</h2><p class="rfPanoSection__lead">Otočte pohledem a podívejte se, co všechno máte kolem domu. Najeďte na bod a uvidíte, jak daleko to je.</p></div><div class="container rfPanoSection__frame"></div>');
 			map.parentNode.insertBefore(wrap, map);
-			wrap.querySelector('.rfPanoSection__frame').appendChild(document.importNode(pano, true));
+			var frame = wrap.querySelector('.rfPanoSection__frame');
+			frame.appendChild(document.importNode(pano, true));
+			// Přepínač Pohled 360° / Mapa 2D — jeden prostor, mapa šablony se do něj přesune
+			var head = wrap.querySelector('.rfPanoSection__head');
+			var sw = el('div', 'rfViewSwitch', '<button type="button" data-view="pano" aria-pressed="true">Pohled 360°</button><button type="button" data-view="map" aria-pressed="false">Mapa 2D</button>');
+			sw.setAttribute('role', 'group');
+			sw.setAttribute('aria-label', 'Zobrazení okolí');
+			head.appendChild(sw);
+			// celá sekce mapy šablony do stejného rámu (zachová styly legendy i filtr bodů)
+			var mapBox = map;
+			mapBox.classList.add('rfMapView');
+			mapBox.hidden = true;
+			frame.appendChild(mapBox);
+			sw.addEventListener('click', function (e) {
+				var b = e.target.closest('button'); if (!b) return;
+				var v = b.getAttribute('data-view');
+				sw.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+				frame.querySelector('section.panoramaHero').hidden = v !== 'pano';
+				mapBox.hidden = v !== 'map';
+				wrap.classList.toggle('is-map', v === 'map');
+				// Leaflet potřebuje přepočítat velikost, když se mapa ukáže
+				if (v === 'map') setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 30);
+			});
 			var s = document.createElement('script');
 			s.type = 'module';
 			s.src = BASE + '/www/assets/panorama360.js';
