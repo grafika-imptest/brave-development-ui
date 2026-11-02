@@ -510,7 +510,9 @@
 			modal.querySelectorAll('.rfChipGroup.is-open').forEach(function (f) { f.classList.remove('is-open'); f.querySelector('.rfChip').setAttribute('aria-expanded', 'false'); });
 		}
 		groups.concat(sortForm ? [sortForm] : []).forEach(function (form) {
-			if (form.querySelector('.rfChip')) return;
+			if (form.querySelector('.rfChip') || form.classList.contains('rfRange')) return;
+			// cena a plocha: posuvník rovnou v liště (bez nabídky)
+			if (/^(or|pr)$/.test(form.getAttribute('data-filter-matrix-kind') || '')) { form.classList.add('rfRange'); return; }
 			var labels = Array.prototype.map.call(form.querySelectorAll('.filterLabel'), function (l) { return l.textContent.trim(); });
 			var title = labels[0] + (labels[1] ? ' a ' + labels[1].toLowerCase() : '');
 			var chip = el('button', 'rfChip', '<span class="rfChip__t">' + title + '</span><span class="rfChip__n" hidden></span>');

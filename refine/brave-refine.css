@@ -4088,6 +4088,233 @@ html.rf-on .rfHouseOutline polygon {
 	stroke-linejoin: round;
 }
 
+/* ==========================================================================
+   Lišta filtrů — vzhled nabídek a posuvníky ceny a plochy přímo v liště
+   ========================================================================== */
+@media (min-width: 1200px) {
+	/* nabídka: bílá karta, nadpis skupiny nad volbami, volby v řadě */
+	html.rf-on .rfFilterBar .rfChipGroup.is-open > .rfPop {
+		gap: 14px;
+		padding: 18px 20px 20px;
+		border-color: var(--rf-line);
+		background: var(--rf-surface) !important;
+		box-shadow: 0 18px 40px -18px rgb(16 32 24 / 0.28), 0 2px 6px rgb(16 32 24 / 0.06);
+	}
+	html.rf-on .rfFilterBar .rfPop > .filterLabel {
+		display: block !important;
+		margin: 0;
+		font: 500 1.3rem/1.2 Poppins, system-ui, sans-serif;
+		letter-spacing: 0;
+		text-transform: none;
+		color: var(--rf-ink-2);
+	}
+	html.rf-on .rfFilterBar .rfPop .filterBlock .filterLabel {
+		font: 500 1.3rem/1.2 Poppins, system-ui, sans-serif;
+		letter-spacing: 0;
+		text-transform: none;
+		color: var(--rf-ink-2);
+	}
+	/* řazení: bez šedého podkladu šablony, volby v řadě */
+	html.rf-on .rfFilterBar .rfPop :is(.sortGroup__row, .sortGroup__pills, .filterBlock) {
+		display: block !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+		border-radius: 0 !important;
+		background: none !important;
+		box-shadow: none !important;
+	}
+	html.rf-on .rfFilterBar .rfPop .pills {
+		flex-wrap: wrap;
+		gap: 8px !important;
+		background: none !important;
+		padding: 0 !important;
+		border-radius: 0 !important;
+	}
+	/* pilulky jako v ukázce: tenký obrys, vybraná vyplněná tmavě zelenou */
+	html.rf-on .rfFilterBar .rfPop :is(.pill, button[data-filter-building], button[data-filter-level]) {
+		height: 38px !important;
+		padding: 0 16px !important;
+		border: 1px solid rgb(0 0 0 / 0.18) !important;
+		background: transparent !important;
+		color: var(--rf-ink-2) !important;
+		font: 400 1.4rem/1 Poppins, system-ui, sans-serif !important;
+		box-shadow: none !important;
+		transition: border-color var(--rf-dur), background-color var(--rf-dur), color var(--rf-dur);
+	}
+	html.rf-on .rfFilterBar .rfPop :is(input:checked + .pill, .pill.active, .pill.is-active, button.is-active, button.active, button[aria-pressed="true"]) {
+		border-color: var(--rf-green-ink) !important;
+		background: var(--rf-green-ink) !important;
+		color: #fff !important;
+		font-weight: 500 !important;
+	}
+
+	/* cena a plocha: popisek, dráha a hodnoty od/do přímo v liště */
+	html.rf-on .rfFilterBar form.rfRange {
+		position: relative;
+		flex: 1 1 220px !important;
+		display: grid !important;
+		grid-template-columns: none !important;
+		gap: 6px;
+		min-width: 210px !important;
+		max-width: 340px !important;
+		width: auto !important;
+		margin: 0 4px 0 12px !important;
+		padding: 0 !important;
+		border: 0 !important;
+		order: 8;
+	}
+	html.rf-on .rfFilterBar form.rfRange > .filterLabel {
+		display: block !important;
+		margin: 0;
+		font: 500 1.3rem/1.2 Poppins, system-ui, sans-serif;
+		color: var(--rf-ink-2);
+		text-transform: none;
+		letter-spacing: 0;
+	}
+	html.rf-on .rfFilterBar form.rfRange > fieldset {
+		display: block !important;
+		position: static !important;
+		width: auto !important;
+		min-width: 0 !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+		box-shadow: none !important;
+		background: none !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange .input-slider-width {
+		display: grid !important;
+		grid-template-columns: 1fr 1fr !important;
+		grid-template-areas: "track track" "lo hi";
+		gap: 6px 10px;
+		width: 100%;
+	}
+	html.rf-on .rfFilterBar form.rfRange .input-slider-result {
+		display: contents !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange .sliderTrack {
+		grid-area: track;
+		width: auto !important;
+		height: 2px !important;
+		margin: 8px 8px 4px;
+		border: 0 !important;
+		border-radius: 2px;
+		background: rgb(0 0 0 / 0.14) !important;
+		box-shadow: none !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange .noUi-connect {
+		background: var(--rf-green-ink) !important;
+		height: 3px;
+		top: -0.5px;
+	}
+	html.rf-on .rfFilterBar form.rfRange .noUi-handle {
+		top: -6px !important;
+		right: -7px !important;
+		width: 14px !important;
+		height: 14px !important;
+		border: 0 !important;
+		border-radius: 50% !important;
+		background: var(--rf-green-ink) !important;
+		box-shadow: 0 0 0 3px #fff, 0 1px 4px rgb(0 0 0 / 0.25) !important;
+		cursor: grab;
+	}
+	html.rf-on .rfFilterBar form.rfRange .noUi-handle::before,
+	html.rf-on .rfFilterBar form.rfRange .noUi-handle::after {
+		display: none !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange .lower { grid-area: lo; justify-content: flex-start; }
+	html.rf-on .rfFilterBar form.rfRange .upper { grid-area: hi; justify-content: flex-end; }
+	html.rf-on .rfFilterBar form.rfRange :is(.lower, .upper) {
+		display: flex !important;
+		gap: 4px;
+		white-space: nowrap;
+	}
+	html.rf-on .rfFilterBar form.rfRange :is(.lower, .upper) * {
+		color: var(--rf-ink-2) !important;
+		font: 400 1.3rem/1.2 Poppins, system-ui, sans-serif !important;
+		text-transform: none !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange :is(.lower, .upper) .com {
+		color: var(--rf-muted) !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange :is(input[type="number"]) {
+		display: none !important;
+	}
+}
+@media (min-width: 1200px) {
+	/* šablona umisťuje části posuvníku vlastní mřížkou → pevné umístění */
+	html.rf-on .rfFilterBar form.rfRange .input-slider-width {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+		grid-template-areas: none !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange .input-slider-width .sliderTrack {
+		grid-column: 1 / -1 !important;
+		grid-row: 1 !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange .input-slider-width .lower {
+		grid-column: 1 !important;
+		grid-row: 2 !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange .input-slider-width .upper {
+		grid-column: 2 !important;
+		grid-row: 2 !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange :is(.valueText, .value, .unit, sup) {
+		color: var(--rf-ink) !important;
+		opacity: 1 !important;
+		visibility: visible !important;
+	}
+	html.rf-on .rfFilterBar form.rfRange .com {
+		text-transform: lowercase !important;
+	}
+}
+@media (min-width: 1200px) {
+	/* pravidla šablony pro posuvníky míří přes #reo-unit-filter-modal → stejná váha */
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange :is(.lower, .upper),
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange :is(.lower, .upper) :is(.value, .valueText, .unit, sup, span) {
+		color: var(--rf-ink) !important;
+		-webkit-text-fill-color: currentColor;
+		font: 400 1.3rem/1.2 Poppins, system-ui, sans-serif !important;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange :is(.lower, .upper) .com {
+		color: var(--rf-muted) !important;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange .lower {
+		justify-content: flex-start !important;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange .upper {
+		justify-content: flex-end !important;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange sup {
+		font-size: 0.75em !important;
+		vertical-align: super;
+		line-height: 0 !important;
+		top: 0;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange {
+		max-width: none !important;
+		min-width: 200px !important;
+		flex: 1 1 200px !important;
+	}
+}
+@media (min-width: 1200px) {
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange :is(.lower, .upper) .unit,
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange :is(.lower, .upper) .unit * {
+		white-space: nowrap;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange :is(.lower, .upper) :is(.unit sup, sup) {
+		position: relative !important;
+		top: -0.45em !important;
+		font-size: 0.72em !important;
+		line-height: 1 !important;
+		vertical-align: baseline !important;
+	}
+	html.rf-on .rfFilterBar #reo-unit-filter-modal form.rfRange {
+		padding: 0 8px !important;
+	}
+}
+
 /* ---- 86-contrast.css ---- */
 /* GENEROVÁNO tools/contrast-css.mjs — needitovat ručně.
    Kontrast textu WCAG AA nad barvami šablony (viz popis v generátoru). */
